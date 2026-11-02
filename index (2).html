@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  STARTER PAGE FOR thetintedpass.in
+  Everything lives in this ONE file:
+    1. HTML  = the content (text, buttons, sections)
+    2. CSS   = the looks (colors, fonts, spacing), inside <style>
+    3. JS    = small behaviours, inside <script> at the bottom
+  Try changing the words and the colors, upload again, and
+  watch the live site change. You can't break anything for good.
+============================================================= -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- This line makes the page fit phone screens properly -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The text shown on the browser tab -->
+  <title>The Tinted Pass</title>
+
+  <style>
+    /* ---------- CSS VARIABLES ----------
+       Change a color here and it changes everywhere. */
+    :root {
+      --bg: #14110f;        /* page background */
+      --text: #f2ebe3;      /* main text */
+      --muted: #a89d92;     /* softer text */
+      --accent: #c9a24b;    /* buttons and highlights */
+    }
+
+    /* Reset: remove default browser spacing so we start clean */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    /* ---------- TOP MENU ---------- */
+    header {
+      display: flex;                 /* puts items in a row */
+      justify-content: space-between;/* logo left, links right */
+      align-items: center;
+      padding: 20px 6vw;
+    }
+    .logo { font-size: 1.1rem; letter-spacing: 0.04em; }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      margin-left: 22px;
+    }
+    nav a:hover { color: var(--text); }  /* changes when mouse is over it */
+
+    /* ---------- HERO (the big first section) ---------- */
+    .hero {
+      min-height: 70vh;              /* 70% of the screen height */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 6vw;
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 9vw, 6rem); /* scales with screen size */
+      line-height: 1.05;
+      max-width: 14ch;
+    }
+    .hero p {
+      color: var(--muted);
+      max-width: 38ch;
+      margin: 20px 0 30px;
+      font-size: 1.15rem;
+    }
+
+    /* ---------- BUTTON ---------- */
+    .button {
+      display: inline-block;
+      width: fit-content;
+      background: var(--accent);
+      color: #14110f;
+      padding: 14px 28px;
+      text-decoration: none;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+    }
+    .button:hover { opacity: 0.85; }
+
+    /* ---------- SECTIONS ---------- */
+    section { padding: 70px 6vw; }
+    section h2 { font-size: 2rem; margin-bottom: 24px; }
+
+    /* A grid of cards: as many columns as fit, minimum 220px wide */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      border: 1px solid #3a322b;
+      padding: 24px;
+    }
+    .card h3 { margin-bottom: 8px; }
+    .card p { color: var(--muted); }
+
+    footer {
+      padding: 30px 6vw;
+      color: var(--muted);
+      border-top: 1px solid #3a322b;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== MENU =====
+       href="#about" jumps to the element with id="about" below -->
+  <header>
+    <div class="logo">The Tinted Pass</div>
+    <nav>
+      <a href="#about">About</a>
+      <a href="#collection">Collection</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <main class="hero">
+    <h1>Your brand headline goes here.</h1>
+    <p>One short sentence that explains what The Tinted Pass is.</p>
+    <a class="button" href="#collection">See the collection</a>
+  </main>
+
+  <!-- ===== ABOUT ===== -->
+  <section id="about">
+    <h2>About</h2>
+    <p>Write two or three lines about your story here. Replace this text with your own.</p>
+  </section>
+
+  <!-- ===== COLLECTION (3 placeholder cards) =====
+       To add a 4th card, copy one whole <div class="card"> block and paste it below. -->
+  <section id="collection">
+    <h2>Collection</h2>
+    <div class="grid">
+      <div class="card"><h3>Item one</h3><p>Short description.</p></div>
+      <div class="card"><h3>Item two</h3><p>Short description.</p></div>
+      <div class="card"><h3>Item three</h3><p>Short description.</p></div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT =====
+       Replace the Instagram link and email with your own. -->
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>Say hello at <a href="mailto:hello@thetintedpass.in" style="color: var(--accent)">hello@thetintedpass.in</a></p>
+  </section>
+
+  <footer>
+    <!-- The year below is filled in by JavaScript -->
+    &copy; <span id="year"></span> The Tinted Pass
+  </footer>
+
+  <script>
+    /* JAVASCRIPT: finds the element with id="year" and puts the
+       current year inside it, so you never have to update it. */
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>
