@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
 import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
-import ExpeditionCartographyMap from "../components/ExpeditionCartographyMap";
 
 // Comprehensive Authentic Stations across Ladakh
 const allStationsData = [
@@ -90,102 +89,6 @@ const allStationsData = [
     exercise: "Deep ultramarine lake watercolor washes, Changpa portrait studies, high alpine flora drawing.",
     x: 68,
     y: 82
-  },
-  {
-    id: "khardungla",
-    name: "Khardung La Pass",
-    region: "Ladakh Range Crest",
-    altitude: "5,359 m",
-    subtitle: "World's highest motorable pass crossing into Nubra & Shyok",
-    chronicler: "Silk Road Caravaners",
-    quote: "A perilous gateway across glaciated granite where prayer flags whip violently in thin, freezing air.",
-    exercise: "Quick charcoal line study from vehicle; rapid temperature perception notes.",
-    x: 47,
-    y: 26
-  },
-  {
-    id: "changla",
-    name: "Chang La Pass",
-    region: "Changthang Gateway",
-    altitude: "5,360 m",
-    subtitle: "Formidable mountain pass crossing into high Changthang plateau",
-    chronicler: "Father Ippolito Desideri (1715 Jesuit explorer)",
-    quote: "Noted the intense ultraviolet light and sheer silence at the high pass summit.",
-    exercise: "High-contrast ink washes of snowy cirques and scree ridges.",
-    x: 61,
-    y: 31
-  },
-  {
-    id: "lamayuru",
-    name: "Lamayuru Gompa",
-    region: "Western Sham Gateway",
-    altitude: "3,510 m",
-    subtitle: "Ancient monastery perched above the eroded lacustrine Moonland",
-    chronicler: "Naropa (11th-century Mahasiddha)",
-    quote: "Tradition holds that a dried glacial lake gave rise to the monastery's dramatic sandstone pinnacles.",
-    exercise: "Plein air geological washes; fast-drying gouache studies of eroded cliff strata.",
-    x: 18,
-    y: 35
-  },
-  {
-    id: "chumathang",
-    name: "Chumathang Geothermal",
-    region: "Upper Indus Valley",
-    altitude: "4,050 m",
-    subtitle: "Geothermal mineral hot springs along the rocky Indus gorge",
-    chronicler: "Sven Hedin (1906 Swedish geographer)",
-    quote: "Surveyed the mineral steam vents and documented the temperature differentials of the high river.",
-    exercise: "Atmospheric steam studies against sharp dark granite cliff faces.",
-    x: 66,
-    y: 44
-  },
-  {
-    id: "tsokar",
-    name: "Tso Kar Salt Basin",
-    region: "Rupshu Mineral Plains",
-    altitude: "4,530 m",
-    subtitle: "Glistening white saline crusts & black-necked crane sanctuary",
-    chronicler: "Traditional Salt Caravans",
-    quote: "Centuries-old salt trade trail connecting Changthang salt miners to lower valleys.",
-    exercise: "Dry mineral gouache on unprimed rough paper; capturing white salt crust refraction.",
-    x: 59,
-    y: 53
-  },
-  {
-    id: "tanglangla",
-    name: "Tanglang La Pass",
-    region: "Manali-Leh Meridian",
-    altitude: "5,328 m",
-    subtitle: "High southern pass connecting the Indus valley to Rupshu plains",
-    chronicler: "High Pass Expeditions",
-    quote: "The final crest of the southern plateau before descending into the fertile willow groves of Upshi.",
-    exercise: "Fast brush ink sketch of hairpin switchbacks descending through scree slopes.",
-    x: 54,
-    y: 48
-  },
-  {
-    id: "stok",
-    name: "Stok Kangri & Palace",
-    region: "Indus Southern Bank",
-    altitude: "3,650 m",
-    subtitle: "Royal seat of the Namgyal dynasty beneath the 6,153m snow pyramid",
-    chronicler: "Royal Chronicles of Ladakh",
-    quote: "The permanent snow-mantled beacon guiding travelers across the high Trans-Himalayan horizons.",
-    exercise: "Mountain geometry studies; planar analysis of peak illumination at dawn.",
-    x: 44,
-    y: 42
-  },
-  {
-    id: "thiksey",
-    name: "Thiksey & Hemis Gompas",
-    region: "Central Indus Valley",
-    altitude: "3,650 m",
-    subtitle: "12-tiered monastery resembling the Potala & sacred hidden gorge of Hemis",
-    chronicler: "Andrew Harvey & Nicholas Roerich",
-    quote: "A monumental tiered pyramid of whitewashed stone resembling Tibet's Potala Palace.",
-    exercise: "Courtyard architecture drawing; golden-hour light across whitewashed monastery tiers.",
-    x: 52,
-    y: 39
   }
 ];
 
@@ -308,12 +211,51 @@ export default function ExploreLadakh() {
             </div>
 
             <div className="explore-map-card animate-enter-3">
-              <ExpeditionCartographyMap
-                activeRouteId={activeRouteId}
-                selectedStationId={activeStationId}
-                onSelectStation={handleStationClick}
-                onSelectRoute={handleRouteSelect}
-              />
+              <div className="explore-map-grid-bg">
+                <div className="explore-map-inner-placeholder">
+                  <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={currentRoute.svgPath}
+                      fill="none"
+                      stroke="rgba(99, 102, 241, 0.45)"
+                      strokeWidth="0.8"
+                      strokeDasharray="2.5 2.5"
+                    />
+                  </svg>
+
+                  <div className="explore-map-header-tag">
+                    <span className="explore-map-canvas-label">
+                      {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
+                    </span>
+                    <span className="explore-map-coord-chip">
+                      {currentStation.altitude} · {currentStation.region.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {currentStations.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
+                      style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                      onClick={() => handleStationClick(st.id)}
+                      title={`${st.name} (${st.altitude})`}
+                      aria-label={`Inspect ${st.name}`}
+                    >
+                      <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+
+                  <div className="explore-map-legend-box">
+                    <div><span>□</span> Hanga Roa</div>
+                    <div><span>◎</span> Volcán</div>
+                    <div><span>—</span> Camino</div>
+                    <div><span>✚</span> Sitio arqueológico</div>
+                    <div><span>···</span> Límite Parque</div>
+                    <div><span>▲</span> Mauya</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="explore-overview-right-stack animate-enter-3">
@@ -355,12 +297,51 @@ export default function ExploreLadakh() {
         {activeMode === "detail" && (
           <div className="explore-detail-grid animate-enter-3">
             <div className="explore-map-card">
-              <ExpeditionCartographyMap
-                activeRouteId={activeRouteId}
-                selectedStationId={activeStationId}
-                onSelectStation={handleStationClick}
-                onSelectRoute={handleRouteSelect}
-              />
+              <div className="explore-map-grid-bg">
+                <div className="explore-map-inner-placeholder">
+                  <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={currentRoute.svgPath}
+                      fill="none"
+                      stroke="rgba(99, 102, 241, 0.45)"
+                      strokeWidth="0.8"
+                      strokeDasharray="2.5 2.5"
+                    />
+                  </svg>
+
+                  <div className="explore-map-header-tag">
+                    <span className="explore-map-canvas-label">
+                      {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
+                    </span>
+                    <span className="explore-map-coord-chip">
+                      {currentStation.altitude} · {currentStation.region.toUpperCase()}
+                    </span>
+                  </div>
+
+                  {currentStations.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
+                      style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                      onClick={() => setActiveStationId(st.id)}
+                      title={`${st.name} (${st.altitude})`}
+                      aria-label={`Select ${st.name}`}
+                    >
+                      <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+
+                  <div className="explore-map-legend-box">
+                    <div><span>□</span> Hanga Roa</div>
+                    <div><span>◎</span> Volcán</div>
+                    <div><span>—</span> Camino</div>
+                    <div><span>✚</span> Sitio arqueológico</div>
+                    <div><span>···</span> Límite Parque</div>
+                    <div><span>▲</span> Mauya</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="explore-detail-station-card">
@@ -516,12 +497,41 @@ export default function ExploreLadakh() {
         {/* TAB 1: Mobile Interactive Map */}
         {mobileViewTab === "map" && (
           <div className="explore-mobile-map-box">
-            <ExpeditionCartographyMap
-              activeRouteId={activeRouteId}
-              selectedStationId={activeStationId}
-              onSelectStation={handleStationClick}
-              onSelectRoute={handleRouteSelect}
-            />
+            <div className="explore-mobile-map-canvas">
+              <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path
+                  d={currentRoute.svgPath}
+                  fill="none"
+                  stroke="rgba(99, 102, 241, 0.55)"
+                  strokeWidth="1.2"
+                  strokeDasharray="3 3"
+                />
+              </svg>
+
+              <div className="explore-mobile-map-tag">
+                <span>{currentRoute.title}</span>
+                <span className="tag-alt">{currentStation.altitude}</span>
+              </div>
+
+              {/* Station Markers with Touch Targets */}
+              {currentStations.map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  className={`explore-mobile-marker ${st.id === currentStation.id ? "active" : ""}`}
+                  style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                  onClick={() => handleStationClick(st.id)}
+                  aria-label={`Select station ${st.name}`}
+                >
+                  <span className="marker-dot" />
+                  <span className="marker-name">{st.name.split(" ")[0]}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="explore-mobile-hint">
+              Tap any pin above to view station details
+            </div>
           </div>
         )}
 
