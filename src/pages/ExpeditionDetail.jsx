@@ -27,6 +27,10 @@ export default function ExpeditionDetail() {
   const [isExiting, setIsExiting] = useState(false);
   const [isSwitchingDay, setIsSwitchingDay] = useState(false);
 
+  // Progressive disclosure states for secondary day details
+  const [showChronicler, setShowChronicler] = useState(true);
+  const [showArtExercise, setShowArtExercise] = useState(true);
+
   const pillRefs = useRef([]);
   const navStripRef = useRef(null);
 
@@ -53,7 +57,7 @@ export default function ExpeditionDetail() {
     }, 200);
   };
 
-  // Smooth day crossfade transition
+  // Smooth day crossfade transition with local strip scroll (zero window scroll shift)
   const handleSelectDay = (idx) => {
     if (idx === selectedDayIdx || isSwitchingDay) return;
     setIsSwitchingDay(true);
@@ -88,6 +92,7 @@ export default function ExpeditionDetail() {
       {/* Expedition Header Strip */}
       <div className="expedition-dossier-header">
         <div className="expedition-dossier-title-group">
+          <div className="expedition-dossier-eyebrow">FIELD EXPEDITION DOSSIER</div>
           <h1 className="expedition-dossier-title">{expedition.title}</h1>
           <span className="expedition-dossier-meta">
             {expedition.length} · Max {expedition.maxAltitude} · Cohort 6-10
@@ -104,7 +109,7 @@ export default function ExpeditionDetail() {
         </a>
       </div>
 
-      {/* Main Single-Viewport 2-Column Grid */}
+      {/* Main 2-Column Grid / Single Column on Mobile */}
       <div className={`expedition-dossier-grid ${isSwitchingDay ? "is-day-crossfading" : ""}`}>
         {/* Left Column: Visual Day Card */}
         <div className="expedition-dossier-left-card">
@@ -185,34 +190,68 @@ export default function ExpeditionDetail() {
             </div>
           </div>
 
-          {/* Day Details Pane */}
+          {/* Day Details Pane with Progressive Disclosure */}
           <div className="expedition-day-details-pane">
-            <div>
+            <div className="expedition-day-intro-block">
               <h2 className="expedition-day-title">
                 Day {currentDay.day || selectedDayIdx + 1}: {currentDay.place}
               </h2>
               <div className="expedition-day-meta-row">
-                <span>Altitude: {currentDay.altitude}</span>
-                {currentDay.region && <span>Region: {currentDay.region}</span>}
-                {currentDay.kind && <span>Focus: {currentDay.kind}</span>}
+                <span className="expedition-meta-chip">Elevation: {currentDay.altitude}</span>
+                {currentDay.region && <span className="expedition-meta-chip">Region: {currentDay.region}</span>}
+                {currentDay.kind && <span className="expedition-meta-chip">Focus: {currentDay.kind}</span>}
               </div>
             </div>
 
+            {/* Progressive Disclosure Section 1: Historic Chronicler Reference */}
             {currentDay.travelerLink && currentDay.travelerLink !== "-" && (
-              <div className="expedition-chronicler-block">
-                <span className="expedition-chronicler-label">
-                  HISTORIC CHRONICLER REFERENCE
-                </span>
-                <p className="expedition-chronicler-quote">
-                  Following the traces of {currentDay.travelerLink}.
-                </p>
+              <div className="expedition-disclosure-card">
+                <button
+                  type="button"
+                  className="expedition-disclosure-header"
+                  onClick={() => setShowChronicler(!showChronicler)}
+                  aria-expanded={showChronicler}
+                >
+                  <span className="expedition-disclosure-title">
+                    🏛 HISTORIC CHRONICLER REFERENCE
+                  </span>
+                  <span className="disclosure-toggle-icon" aria-hidden="true">
+                    {showChronicler ? "−" : "+"}
+                  </span>
+                </button>
+                {showChronicler && (
+                  <div className="expedition-disclosure-body">
+                    <p className="expedition-chronicler-quote">
+                      Following the traces of <em>{currentDay.travelerLink}</em> across this passage.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="expedition-day-art-box">
-              <span className="expedition-day-art-label">STUDIO &amp; ART EXERCISE</span>
-              <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
-            </div>
+            {/* Progressive Disclosure Section 2: Studio & Art Exercise */}
+            {currentDay.artExercise && (
+              <div className="expedition-disclosure-card art-exercise-card">
+                <button
+                  type="button"
+                  className="expedition-disclosure-header"
+                  onClick={() => setShowArtExercise(!showArtExercise)}
+                  aria-expanded={showArtExercise}
+                >
+                  <span className="expedition-disclosure-title">
+                    🎨 STUDIO &amp; ART EXERCISE
+                  </span>
+                  <span className="disclosure-toggle-icon" aria-hidden="true">
+                    {showArtExercise ? "−" : "+"}
+                  </span>
+                </button>
+                {showArtExercise && (
+                  <div className="expedition-disclosure-body">
+                    <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Action Row */}
@@ -221,7 +260,8 @@ export default function ExpeditionDetail() {
               to="/contact"
               className="journey-dossier-btn"
             >
-              REQUEST FULL DOSSIER &amp; RESERVE PASS &nbsp;↗
+              <span>REQUEST FULL DOSSIER &amp; RESERVE PASS</span>
+              <span className="btn-icon" aria-hidden="true">↗</span>
             </Link>
           </div>
         </div>

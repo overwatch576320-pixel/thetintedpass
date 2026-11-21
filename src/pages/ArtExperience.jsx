@@ -7,6 +7,7 @@ const practices = [
   {
     id: "pigments",
     num: "01",
+    shortLabel: "01 Pigments",
     title: "Natural Mineral Pigments & Grinding",
     summary: "Lapis Lazuli, Malachite, Yellow Ochre, Slate & Cinnabar",
     desc: "Extract, grind, and mull pure raw minerals sourced from high Trans-Himalayan valleys with gum arabic and organic walnut oil binders on marble slabs.",
@@ -17,6 +18,7 @@ const practices = [
   {
     id: "murals",
     num: "02",
+    shortLabel: "02 Frescoes",
     title: "Monastic Fresco & Tempera Studies",
     summary: "11th-Century Kashmiri-Buddhist Wall Frescoes at Alchi & Basgo",
     desc: "Analytical drawing and tonal copies of 1,000-year-old mud-brick wall paintings. Examine miniature floral motifs, gold leaf embellishments and iconographic geometry.",
@@ -27,6 +29,7 @@ const practices = [
   {
     id: "plein-air",
     num: "03",
+    shortLabel: "03 Plein Air",
     title: "Plein Air High-Altitude Gouache & Watercolor",
     summary: "Fast-Drying Atmosphere Studies on Granite Passes & Dunes",
     desc: "Learn to handle rapidly evaporating washes in thin, arid mountain air. Capture shifting shadow angles across cold-desert sand dunes and glacier crests.",
@@ -37,6 +40,7 @@ const practices = [
   {
     id: "journal",
     num: "04",
+    shortLabel: "04 Journals",
     title: "Handbound Expedition Journals & Cartography",
     summary: "The Art of Seeing: Bound Field Dossiers & Topographic Notes",
     desc: "Every cohort member binds their own field book in goat leather and archival cotton paper. Combine written impressions, pressed alpine flora, compass bearings and elevation sketches.",
@@ -49,66 +53,162 @@ const practices = [
 export default function ArtExperience() {
   const { content } = useSiteContent();
   const [activePracticeId, setActivePracticeId] = useState("pigments");
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
 
   const currentPractice = practices.find((p) => p.id === activePracticeId) || practices[0];
 
   return (
     <div className="art-exp-container">
-      {/* Left Column: Heading, Subhead & 4 Practice Selection Cards */}
-      <div className="art-exp-left-col">
-        <h1 className="art-exp-heading animate-enter-1">
-          {content.artHeading || "The Art of Seeing: Himalayan Studio Practice"}
-        </h1>
-        <p className="art-exp-intro animate-enter-2">
-          {content.artIntro ||
-            "An expedition is not only a passage through landscapes. It is an opportunity to slow down, observe, interpret and create with mineral pigments and sable brushes."}
-        </p>
+      {/* =========================================================================
+          DESKTOP 2-COLUMN VIEW (Preserved for Desktop Single-Viewport Layout)
+          ========================================================================= */}
+      <div className="art-exp-desktop-only">
+        <div className="art-exp-left-col">
+          <div className="art-exp-eyebrow">STUDIO MENTORSHIP &amp; PRACTICE</div>
+          <h1 className="art-exp-heading animate-enter-1">
+            {content.artHeading || "The Art of Seeing: Himalayan Studio Practice"}
+          </h1>
+          <p className="art-exp-intro animate-enter-2">
+            {content.artIntro ||
+              "An expedition is not only a passage through landscapes. It is an opportunity to slow down, observe, interpret and create with mineral pigments and sable brushes."}
+          </p>
 
-        {/* 4 Interactive Practice Tabs */}
-        <div className="art-exp-discipline-list animate-enter-3" role="tablist" aria-label="Studio Practices">
-          {practices.map((practice) => (
-            <div
-              key={practice.id}
-              className={`art-exp-discipline-item ${practice.id === activePracticeId ? "active" : ""}`}
-              onClick={() => setActivePracticeId(practice.id)}
-              role="tab"
-              tabIndex={0}
-              aria-selected={practice.id === activePracticeId}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") setActivePracticeId(practice.id);
-              }}
-            >
-              <div className="art-exp-discipline-title">
-                {practice.num} · {practice.title}
+          <div className="art-exp-discipline-list animate-enter-3" role="tablist" aria-label="Studio Practices">
+            {practices.map((practice) => (
+              <div
+                key={practice.id}
+                className={`art-exp-discipline-item ${practice.id === activePracticeId ? "active" : ""}`}
+                onClick={() => setActivePracticeId(practice.id)}
+                role="tab"
+                tabIndex={0}
+                aria-selected={practice.id === activePracticeId}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") setActivePracticeId(practice.id);
+                }}
+              >
+                <div className="art-exp-discipline-title">
+                  {practice.num} · {practice.title}
+                </div>
+                <div className="art-exp-discipline-desc">{practice.summary}</div>
               </div>
-              <div className="art-exp-discipline-desc">{practice.summary}</div>
+            ))}
+          </div>
+        </div>
+
+        <div className="art-exp-right-card animate-enter-3">
+          <div key={currentPractice.id} className="discipline-crossfade" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
+            <SolidPlaceholder
+              slotId="artExperienceHero"
+              className="art-exp-image-slot"
+              badge={currentPractice.badge}
+            />
+
+            <div className="art-exp-card-body">
+              <h2 className="art-exp-card-title">T  H  E    P  R  A  C  T  I  C  E</h2>
+              <p className="art-exp-card-desc">{currentPractice.desc}</p>
+              <p className="art-exp-card-desc" style={{ fontSize: "10.5px", color: "#64748b" }}>
+                <strong>Materials:</strong> {currentPractice.supplies}
+              </p>
+              <p className="art-exp-card-desc" style={{ fontSize: "10.5px", color: "#64748b" }}>
+                <strong>Session Rhythm:</strong> {currentPractice.timing}
+              </p>
+
+              <div className="art-exp-action-row">
+                <Link to="/contact" className="journey-dossier-btn">
+                  <span>RESERVE ATELIER PASS</span>
+                  <span className="btn-icon" aria-hidden="true">↗</span>
+                </Link>
+              </div>
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Right Column: White Card with Solid Placeholder & Practice Details */}
-      <div className="art-exp-right-card animate-enter-3">
-        <div key={currentPractice.id} className="discipline-crossfade" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between" }}>
+      {/* =========================================================================
+          MOBILE-FIRST PROGRESSIVE DISCLOSURE ARCHITECTURE (<= 767px)
+          ========================================================================= */}
+      <div className="art-exp-mobile-only">
+        {/* Mobile Header */}
+        <div className="art-mobile-header">
+          <div className="art-mobile-eyebrow">STUDIO DISCIPLINES</div>
+          <h1 className="art-mobile-title">
+            {content.artHeading || "The Art of Seeing: Himalayan Studio Practice"}
+          </h1>
+          <p className="art-mobile-intro">
+            {content.artIntro ||
+              "An expedition is an opportunity to slow down, observe, and create with hand-mull mineral pigments and sable brushes."}
+          </p>
+        </div>
+
+        {/* 4 Selectable Discipline Chips / Segmented Control */}
+        <div className="art-mobile-chips-row" role="tablist" aria-label="Atelier Disciplines">
+          {practices.map((practice) => (
+            <button
+              key={practice.id}
+              type="button"
+              className={`art-mobile-chip-btn ${practice.id === activePracticeId ? "active" : ""}`}
+              onClick={() => {
+                setActivePracticeId(practice.id);
+                setShowMobileDetails(false);
+              }}
+              role="tab"
+              aria-selected={practice.id === activePracticeId}
+            >
+              <span>{practice.shortLabel}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Active Discipline Card */}
+        <div className="art-mobile-card">
           <SolidPlaceholder
             slotId="artExperienceHero"
-            className="art-exp-image-slot"
+            className="art-mobile-image-slot"
             badge={currentPractice.badge}
           />
 
-          <div className="art-exp-card-body">
-            <h2 className="art-exp-card-title">T  H  E    P  R  A  C  T  I  C  E</h2>
-            <p className="art-exp-card-desc">{currentPractice.desc}</p>
-            <p className="art-exp-card-desc" style={{ fontSize: "10.5px", color: "#64748b" }}>
-              <strong>Materials:</strong> {currentPractice.supplies}
-            </p>
-            <p className="art-exp-card-desc" style={{ fontSize: "10.5px", color: "#64748b" }}>
-              <strong>Session Rhythm:</strong> {currentPractice.timing}
-            </p>
+          <div className="art-mobile-card-body">
+            <div className="art-mobile-badge-row">
+              <span className="art-mobile-badge">{currentPractice.badge}</span>
+              <span className="art-mobile-stepper">{currentPractice.num} / 04</span>
+            </div>
 
-            <div className="art-exp-action-row">
-              <Link to="/contact" className="journey-dossier-btn">
-                RESERVE ATELIER PASS &nbsp;↗
+            <h2 className="art-mobile-card-title">{currentPractice.title}</h2>
+            <p className="art-mobile-summary">{currentPractice.summary}</p>
+            <p className="art-mobile-desc">{currentPractice.desc}</p>
+
+            {/* Progressive Disclosure Section: Materials & Schedule */}
+            <div className="art-mobile-accordion">
+              <button
+                type="button"
+                className="art-mobile-accordion-toggle"
+                onClick={() => setShowMobileDetails(!showMobileDetails)}
+                aria-expanded={showMobileDetails}
+              >
+                <span>{showMobileDetails ? "Hide Materials & Studio Schedule" : "View Materials & Studio Schedule"}</span>
+                <span className="toggle-chevron" aria-hidden="true">{showMobileDetails ? "↑" : "↓"}</span>
+              </button>
+
+              {showMobileDetails && (
+                <div className="art-mobile-drawer-content">
+                  <div className="art-drawer-item">
+                    <span className="art-drawer-label">✦ MATERIALS &amp; STUDIO KIT</span>
+                    <p className="art-drawer-text">{currentPractice.supplies}</p>
+                  </div>
+
+                  <div className="art-drawer-item" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+                    <span className="art-drawer-label">✦ SESSION RHYTHM &amp; TIMING</span>
+                    <p className="art-drawer-text">{currentPractice.timing}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Direct Reservation CTA */}
+            <div className="art-mobile-action-row">
+              <Link to="/contact" className="art-mobile-reserve-btn">
+                <span>RESERVE ATELIER PASS</span>
+                <span className="btn-arrow" aria-hidden="true">↗</span>
               </Link>
             </div>
           </div>

@@ -98,6 +98,7 @@ export default function Philosophy() {
     <div className="philosophy-container">
       {/* Left Column: Heading and Description */}
       <div className="philosophy-left-col">
+        <div className="philosophy-eyebrow">THE ATELIER THESIS</div>
         <h1 className="philosophy-heading animate-enter-1">
           {content.philosophyHeadline || "Art is the Antidote for Life"}
         </h1>
@@ -160,8 +161,36 @@ export default function Philosophy() {
                 </p>
               </div>
 
-              {/* Bottom Actions Row */}
-              <div className="philosophy-bottom-actions">
+              {/* Mobile In-Place Progressive Disclosure Accordion */}
+              <div className="philosophy-mobile-accordion">
+                <button
+                  type="button"
+                  className="philosophy-mobile-expand-btn"
+                  onClick={() => setIsDossierOpen(!isDossierOpen)}
+                  aria-expanded={isDossierOpen}
+                  aria-label={isDossierOpen ? "Close Atelier Essay" : "Read Full Atelier Essay & Tenets"}
+                >
+                  <span>{isDossierOpen ? "Close Atelier Essay" : "Read Full Atelier Essay & Tenets"}</span>
+                  <span className="expand-chevron" aria-hidden="true">{isDossierOpen ? "↑" : "↓"}</span>
+                </button>
+                {isDossierOpen && (
+                  <div className="philosophy-mobile-essay-content">
+                    <p className="philosophy-mobile-essay-p">{activeChapter.essay}</p>
+                    <div className="philosophy-tenets-box">
+                      <div className="philosophy-tenets-heading">Atelier Core Tenets</div>
+                      {activeChapter.tenets.map((tenet, i) => (
+                        <div key={i} className="philosophy-mobile-tenet">
+                          <span className="tenet-bullet">•</span>
+                          <span>{tenet}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Bottom Actions Row */}
+              <div className="philosophy-bottom-actions desktop-only-actions">
                 <button
                   type="button"
                   className="philosophy-read-btn"
@@ -194,9 +223,9 @@ export default function Philosophy() {
             </div>
           </div>
 
-          {/* Full In-Card Reading Dossier Overlay */}
+          {/* Desktop Full In-Card Reading Dossier Overlay */}
           {isDossierOpen && (
-            <div className="philosophy-dossier-view" role="dialog" aria-modal="true">
+            <div className="philosophy-dossier-view desktop-only-dossier" role="dialog" aria-modal="true">
               <div className="philosophy-dossier-header">
                 <div>
                   <span className="philosophy-badge">{activeChapter.badge}</span>
@@ -231,7 +260,7 @@ export default function Philosophy() {
                   className="philosophy-read-btn"
                   onClick={() => setIsDossierOpen(false)}
                 >
-                  ← Back to Artwork & Overview
+                  ← Back to Artwork &amp; Overview
                 </button>
                 <div className="philosophy-nav-arrows">
                   <button

@@ -126,22 +126,27 @@ const routeDefinitions = {
 };
 
 const routePills = [
-  { id: "overview", label: "All Destination Overview", days: "" },
-  { id: "route-10", label: "10 days / The First Light", days: "10 days" },
-  { id: "route-13", label: "13 days / The Heartland Passage", days: "13 days" },
-  { id: "route-14", label: "14 days / Beyond The Blue", days: "14 days" },
-  { id: "route-15", label: "15 days / The Grand Traverse", days: "15 days" }
+  { id: "overview", label: "All Destinations (7)", days: "" },
+  { id: "route-10", label: "10 Days / First Light", days: "10 days" },
+  { id: "route-13", label: "13 Days / Heartland", days: "13 days" },
+  { id: "route-14", label: "14 Days / Beyond Blue", days: "14 days" },
+  { id: "route-15", label: "15 Days / Grand Traverse", days: "15 days" }
 ];
 
 export default function ExploreLadakh() {
   const { content } = useSiteContent();
   const [searchParams] = useSearchParams();
 
-  // State: "overview" | "detail"
+  // Desktop State: "overview" | "detail"
   const [activeMode, setActiveMode] = useState(
     searchParams.get("mode") === "detail" ? "detail" : "overview"
   );
   
+  // Mobile specific view tab: "map" | "directory"
+  const [mobileViewTab, setMobileViewTab] = useState("map");
+  // Progressive disclosure for mobile station detail
+  const [showMobileStationDetails, setShowMobileStationDetails] = useState(false);
+
   // Default to 13 days Heartland Passage if opened in detail, otherwise overview
   const [activeRouteId, setActiveRouteId] = useState(
     searchParams.get("route") || (searchParams.get("mode") === "detail" ? "route-13" : "overview")
@@ -163,7 +168,6 @@ export default function ExploreLadakh() {
   const handleRouteSelect = (routeId) => {
     setActiveRouteId(routeId);
     const targetRoute = routeDefinitions[routeId] || routeDefinitions.overview;
-    // Auto-select first station of the selected route if current station isn't on that route
     if (!targetRoute.stationIds.includes(activeStationId)) {
       setActiveStationId(targetRoute.stationIds[0]);
     }
@@ -177,6 +181,8 @@ export default function ExploreLadakh() {
   const handleStationClick = (stationId) => {
     setActiveStationId(stationId);
     setActiveMode("detail");
+    // Ensure mobile station details are accessible
+    setShowMobileStationDetails(true);
   };
 
   return (
@@ -186,269 +192,402 @@ export default function ExploreLadakh() {
         GEOGRAPHIC STORYTELLING · LADAKH TERRAIN
       </div>
 
-      {/* MODE 1: Topography Overview (explore ladakh animation.png) */}
-      {activeMode === "overview" && (
-        <div className="explore-overview-grid">
-          {/* Left Column: Heading & Subtitle */}
-          <div className="explore-overview-left">
-            <h1 className="explore-title animate-enter-1">
-              {content.exploreHeading || "Topography of the Trans-Himalayas"}
-            </h1>
-            <p className="explore-intro-text animate-enter-2">
-              {content.exploreIntro ||
-                "An interactive cartographic exploration of Ladakh’s mountain sanctuaries, high passes, and endorheic lakes. Select a route to trace its path across the terrain, or inspect individual stations for their historical figures and mineral pigments."}
-            </p>
-          </div>
-
-          {/* Center Column: Cartographic Map Canvas Placeholder */}
-          <div className="explore-map-card animate-enter-3">
-            <div className="explore-map-grid-bg">
-              {/* Solid Map Canvas Placeholder */}
-              <div className="explore-map-inner-placeholder">
-                <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <path
-                    d={currentRoute.svgPath}
-                    fill="none"
-                    stroke="rgba(99, 102, 241, 0.45)"
-                    strokeWidth="0.8"
-                    strokeDasharray="2.5 2.5"
-                  />
-                </svg>
-
-                <div className="explore-map-header-tag">
-                  <span className="explore-map-canvas-label">
-                    {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
-                  </span>
-                  <span className="explore-map-coord-chip">
-                    {currentStation.altitude} · {currentStation.region.toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Interactive Station Markers on Map Canvas */}
-                {currentStations.map((st) => (
-                  <button
-                    key={st.id}
-                    type="button"
-                    className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
-                    style={{ left: `${st.x}%`, top: `${st.y}%` }}
-                    onClick={() => handleStationClick(st.id)}
-                    title={`${st.name} (${st.altitude})`}
-                    aria-label={`Inspect ${st.name}`}
-                  >
-                    <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
-                  </button>
-                ))}
-
-                {/* Map Legend Box */}
-                <div className="explore-map-legend-box">
-                  <div><span>□</span> Hanga Roa</div>
-                  <div><span>◎</span> Volcán</div>
-                  <div><span>—</span> Camino</div>
-                  <div><span>✚</span> Sitio arqueológico</div>
-                  <div><span>···</span> Límite Parque</div>
-                  <div><span>▲</span> Mauya</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Stacked Destination & Chronicler Cards */}
-          <div className="explore-overview-right-stack animate-enter-3">
-            {/* Card 1: Visual Slot */}
-            <SolidPlaceholder
-              slotId="exploreStationCover1"
-              className="explore-overview-thumb-card"
-            >
-              <div className="explore-thumb-header-badge">
-                <span>STATION OVERVIEW</span>
-                <span className="explore-overview-region-label">{currentStation.region}</span>
-              </div>
-              <div className="placeholder-footer-strip">
-                <span className="placeholder-footer-left">{currentStation.name}</span>
-                <span className="placeholder-footer-right">{currentStation.altitude}</span>
-              </div>
-            </SolidPlaceholder>
-
-            {/* Card 2: Destination Card */}
-            <div className="explore-overview-blue-card">
-              <h2 className="explore-overview-dest-title">{currentStation.name}</h2>
-              <p className="explore-overview-dest-subtitle">{currentStation.subtitle}</p>
+      {/* =========================================================================
+          DESKTOP VIEWS (Untouched for Desktop Single-Viewport Layout)
+          ========================================================================= */}
+      <div className="explore-desktop-only">
+        {/* MODE 1: Topography Overview */}
+        {activeMode === "overview" && (
+          <div className="explore-overview-grid">
+            <div className="explore-overview-left">
+              <h1 className="explore-title animate-enter-1">
+                {content.exploreHeading || "Topography of the Trans-Himalayas"}
+              </h1>
+              <p className="explore-intro-text animate-enter-2">
+                {content.exploreIntro ||
+                  "An interactive cartographic exploration of Ladakh’s mountain sanctuaries, high passes, and endorheic lakes. Select a route to trace its path across the terrain, or inspect individual stations for their historical figures and mineral pigments."}
+              </p>
             </div>
 
-            {/* Card 3: Historic Chronicler Card */}
-            <div className="explore-overview-cyan-card">
-              <div className="explore-overview-cyan-title">
-                HISTORIC CHRONICLER · {currentStation.chronicler}
-              </div>
-              <p className="explore-overview-cyan-desc">“{currentStation.quote}”</p>
-            </div>
+            <div className="explore-map-card animate-enter-3">
+              <div className="explore-map-grid-bg">
+                <div className="explore-map-inner-placeholder">
+                  <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={currentRoute.svgPath}
+                      fill="none"
+                      stroke="rgba(99, 102, 241, 0.45)"
+                      strokeWidth="0.8"
+                      strokeDasharray="2.5 2.5"
+                    />
+                  </svg>
 
-            {/* Card 4: Creative Atelier Exercise Card */}
-            <div className="explore-overview-cyan-card">
-              <div className="explore-overview-cyan-title">CREATIVE ATELIER EXERCISE</div>
-              <p className="explore-overview-cyan-desc">{currentStation.exercise}</p>
-            </div>
-          </div>
-        </div>
-      )}
+                  <div className="explore-map-header-tag">
+                    <span className="explore-map-canvas-label">
+                      {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
+                    </span>
+                    <span className="explore-map-coord-chip">
+                      {currentStation.altitude} · {currentStation.region.toUpperCase()}
+                    </span>
+                  </div>
 
-      {/* MODE 2: Station / Destination Detail Layout (explore ladakh.png) */}
-      {activeMode === "detail" && (
-        <div className="explore-detail-grid animate-enter-3">
-          {/* Center-Left Map Canvas */}
-          <div className="explore-map-card">
-            <div className="explore-map-grid-bg">
-              <div className="explore-map-inner-placeholder">
-                <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <path
-                    d={currentRoute.svgPath}
-                    fill="none"
-                    stroke="rgba(99, 102, 241, 0.45)"
-                    strokeWidth="0.8"
-                    strokeDasharray="2.5 2.5"
-                  />
-                </svg>
+                  {currentStations.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
+                      style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                      onClick={() => handleStationClick(st.id)}
+                      title={`${st.name} (${st.altitude})`}
+                      aria-label={`Inspect ${st.name}`}
+                    >
+                      <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
 
-                <div className="explore-map-header-tag">
-                  <span className="explore-map-canvas-label">
-                    {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
-                  </span>
-                  <span className="explore-map-coord-chip">
-                    {currentStation.altitude} · {currentStation.region.toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Interactive Station Markers */}
-                {currentStations.map((st) => (
-                  <button
-                    key={st.id}
-                    type="button"
-                    className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
-                    style={{ left: `${st.x}%`, top: `${st.y}%` }}
-                    onClick={() => setActiveStationId(st.id)}
-                    title={`${st.name} (${st.altitude})`}
-                    aria-label={`Select ${st.name}`}
-                  >
-                    <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
-                  </button>
-                ))}
-
-                <div className="explore-map-legend-box">
-                  <div><span>□</span> Hanga Roa</div>
-                  <div><span>◎</span> Volcán</div>
-                  <div><span>—</span> Camino</div>
-                  <div><span>✚</span> Sitio arqueológico</div>
-                  <div><span>···</span> Límite Parque</div>
-                  <div><span>▲</span> Mauya</div>
+                  <div className="explore-map-legend-box">
+                    <div><span>□</span> Hanga Roa</div>
+                    <div><span>◎</span> Volcán</div>
+                    <div><span>—</span> Camino</div>
+                    <div><span>✚</span> Sitio arqueológico</div>
+                    <div><span>···</span> Límite Parque</div>
+                    <div><span>▲</span> Mauya</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Center Column: Station Visual & Chronicler Info */}
-          <div className="explore-detail-station-card">
-            <SolidPlaceholder
-              slotId="exploreStationCover1"
-              className="explore-detail-thumb-slot"
-            >
-              <div className="explore-thumb-header-badge">
-                <span>STATION FIELD STUDY</span>
-                <span className="explore-overview-region-label">{currentStation.region}</span>
-              </div>
-              <div className="placeholder-footer-strip">
-                <span className="placeholder-footer-left">{currentStation.name}</span>
-                <span className="placeholder-footer-right">{currentStation.altitude}</span>
-              </div>
-            </SolidPlaceholder>
+            <div className="explore-overview-right-stack animate-enter-3">
+              <SolidPlaceholder
+                slotId="exploreStationCover1"
+                className="explore-overview-thumb-card"
+              >
+                <div className="explore-thumb-header-badge">
+                  <span>STATION OVERVIEW</span>
+                  <span className="explore-overview-region-label">{currentStation.region}</span>
+                </div>
+                <div className="placeholder-footer-strip">
+                  <span className="placeholder-footer-left">{currentStation.name}</span>
+                  <span className="placeholder-footer-right">{currentStation.altitude}</span>
+                </div>
+              </SolidPlaceholder>
 
-            <div className="explore-detail-info-pane">
-              <div>
-                <h2 className="explore-detail-station-name">{currentStation.name}</h2>
-                <p className="explore-detail-station-sub">{currentStation.subtitle}</p>
+              <div className="explore-overview-blue-card">
+                <h2 className="explore-overview-dest-title">{currentStation.name}</h2>
+                <p className="explore-overview-dest-subtitle">{currentStation.subtitle}</p>
               </div>
 
-              <div className="explore-chronicler-block">
-                <div className="explore-chronicler-label">
+              <div className="explore-overview-cyan-card">
+                <div className="explore-overview-cyan-title">
                   HISTORIC CHRONICLER · {currentStation.chronicler}
                 </div>
-                <p className="explore-chronicler-quote">“{currentStation.quote}”</p>
+                <p className="explore-overview-cyan-desc">“{currentStation.quote}”</p>
               </div>
 
-              <div className="explore-exercise-block">
-                <div className="explore-exercise-label">CREATIVE ATELIER EXERCISE</div>
-                <p className="explore-exercise-desc">{currentStation.exercise}</p>
+              <div className="explore-overview-cyan-card">
+                <div className="explore-overview-cyan-title">CREATIVE ATELIER EXERCISE</div>
+                <p className="explore-overview-cyan-desc">{currentStation.exercise}</p>
               </div>
             </div>
           </div>
+        )}
 
-          {/* Right Column: Upper Visual & Station Timeline Selector */}
-          <div className="explore-timeline-col">
-            <SolidPlaceholder
-              slotId="exploreStationCover2"
-              className="explore-detail-thumb-slot"
-            >
-              <div className="explore-thumb-header-badge">
-                <span>HISTORIC ARCHIVE</span>
-                <span className="explore-overview-region-label">ALT. {currentStation.altitude}</span>
-              </div>
-              <div className="placeholder-footer-strip">
-                <span className="placeholder-footer-left">{currentStation.chronicler.split("(")[0].trim()}</span>
-                <span className="placeholder-footer-right">ARCHIVE 02</span>
-              </div>
-            </SolidPlaceholder>
+        {/* MODE 2: Station Detail Layout */}
+        {activeMode === "detail" && (
+          <div className="explore-detail-grid animate-enter-3">
+            <div className="explore-map-card">
+              <div className="explore-map-grid-bg">
+                <div className="explore-map-inner-placeholder">
+                  <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={currentRoute.svgPath}
+                      fill="none"
+                      stroke="rgba(99, 102, 241, 0.45)"
+                      strokeWidth="0.8"
+                      strokeDasharray="2.5 2.5"
+                    />
+                  </svg>
 
-            <div className="explore-timeline-chart-card">
-              <div className="explore-timeline-header">
-                <span className="explore-timeline-label">Select Transit Station</span>
-                <span className="explore-station-counter">
-                  {currentStations.findIndex((s) => s.id === currentStation.id) + 1} of {currentStations.length}
-                </span>
-              </div>
-
-              <div className="explore-timeline-station-selector">
-                {currentStations.map((st) => (
-                  <div
-                    key={st.id}
-                    className={`explore-timeline-stop-item ${st.id === currentStation.id ? "active" : ""}`}
-                    onClick={() => setActiveStationId(st.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") setActiveStationId(st.id);
-                    }}
-                  >
-                    <span className="explore-stop-name">{st.name}</span>
-                    <span className="explore-stop-alt">{st.altitude}</span>
+                  <div className="explore-map-header-tag">
+                    <span className="explore-map-canvas-label">
+                      {currentRoute.title.toUpperCase()} · {currentStations.length} STATIONS
+                    </span>
+                    <span className="explore-map-coord-chip">
+                      {currentStation.altitude} · {currentStation.region.toUpperCase()}
+                    </span>
                   </div>
-                ))}
+
+                  {currentStations.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      className={`explore-map-marker ${st.id === currentStation.id ? "active" : ""}`}
+                      style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                      onClick={() => setActiveStationId(st.id)}
+                      title={`${st.name} (${st.altitude})`}
+                      aria-label={`Select ${st.name}`}
+                    >
+                      <span className="explore-marker-pin-label">{st.name.split(" ")[0]}</span>
+                    </button>
+                  ))}
+
+                  <div className="explore-map-legend-box">
+                    <div><span>□</span> Hanga Roa</div>
+                    <div><span>◎</span> Volcán</div>
+                    <div><span>—</span> Camino</div>
+                    <div><span>✚</span> Sitio arqueológico</div>
+                    <div><span>···</span> Límite Parque</div>
+                    <div><span>▲</span> Mauya</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="explore-detail-station-card">
+              <SolidPlaceholder
+                slotId="exploreDetailCover"
+                className="explore-detail-image-slot"
+              >
+                <div className="explore-detail-badge-row">
+                  <span className="explore-detail-coord-badge">ALT. {currentStation.altitude}</span>
+                  <span className="explore-detail-station-badge">{currentStation.region.toUpperCase()}</span>
+                </div>
+                <div className="placeholder-footer-strip">
+                  <span className="placeholder-footer-left">{currentStation.name}</span>
+                  <span className="placeholder-footer-right">{currentStation.altitude}</span>
+                </div>
+              </SolidPlaceholder>
+
+              <div className="explore-detail-info-block">
+                <h2 className="explore-detail-title">{currentStation.name}</h2>
+                <p className="explore-detail-quote">“{currentStation.quote}”</p>
+                <div className="explore-detail-exercise-box">
+                  <span className="explore-exercise-label">ATELIER EXERCISE</span>
+                  <p className="explore-exercise-desc">{currentStation.exercise}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="explore-timeline-col">
+              <SolidPlaceholder
+                slotId="exploreStationCover2"
+                className="explore-detail-thumb-slot"
+              >
+                <div className="explore-thumb-header-badge">
+                  <span>HISTORIC ARCHIVE</span>
+                  <span className="explore-overview-region-label">ALT. {currentStation.altitude}</span>
+                </div>
+                <div className="placeholder-footer-strip">
+                  <span className="placeholder-footer-left">{currentStation.chronicler.split("(")[0].trim()}</span>
+                  <span className="placeholder-footer-right">ARCHIVE 02</span>
+                </div>
+              </SolidPlaceholder>
+
+              <div className="explore-timeline-chart-card">
+                <div className="explore-timeline-header">
+                  <span className="explore-timeline-label">Select Transit Station</span>
+                  <span className="explore-station-counter">
+                    {currentStations.findIndex((s) => s.id === currentStation.id) + 1} of {currentStations.length}
+                  </span>
+                </div>
+
+                <div className="explore-timeline-station-selector">
+                  {currentStations.map((st) => (
+                    <div
+                      key={st.id}
+                      className={`explore-timeline-stop-item ${st.id === currentStation.id ? "active" : ""}`}
+                      onClick={() => setActiveStationId(st.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") setActiveStationId(st.id);
+                      }}
+                    >
+                      <span className="explore-stop-name">{st.name}</span>
+                      <span className="explore-stop-alt">{st.altitude}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="explore-overview-btn"
+                  onClick={() => handleRouteSelect("overview")}
+                >
+                  ← Back to Topography Overview
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Desktop Route Filter Pills */}
+        <div className="explore-bottom-pills-row animate-enter-4" role="tablist" aria-label="Route Selectors">
+          {routePills.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`explore-pill-btn ${activeRouteId === p.id ? "active" : ""}`}
+              onClick={() => handleRouteSelect(p.id)}
+              role="tab"
+              aria-selected={activeRouteId === p.id}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* =========================================================================
+          MOBILE-FIRST PROGRESSIVE DISCLOSURE ARCHITECTURE (<= 767px)
+          ========================================================================= */}
+      <div className="explore-mobile-only">
+        {/* Mobile Page Header */}
+        <div className="explore-mobile-header">
+          <div className="explore-mobile-eyebrow">CARTOGRAPHIC TERRAIN</div>
+          <h1 className="explore-mobile-title">
+            {content.exploreHeading || "Topography of the Trans-Himalayas"}
+          </h1>
+          <p className="explore-mobile-intro">
+            {content.exploreIntro ||
+              "Explore Ladakh’s mountain sanctuaries, high passes, and mineral salt lakes. Tap station markers on the map to inspect historic chronicles and creative studio studies."}
+          </p>
+        </div>
+
+        {/* Route Selector Chips (Mobile Horizontal Scrollable) */}
+        <div className="explore-mobile-routes-strip" role="tablist" aria-label="Expedition Routes">
+          {routePills.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`explore-mobile-route-chip ${activeRouteId === p.id ? "active" : ""}`}
+              onClick={() => handleRouteSelect(p.id)}
+              role="tab"
+              aria-selected={activeRouteId === p.id}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile View Mode Segmented Control */}
+        <div className="explore-mobile-view-toggle">
+          <button
+            type="button"
+            className={`explore-mobile-toggle-btn ${mobileViewTab === "map" ? "active" : ""}`}
+            onClick={() => setMobileViewTab("map")}
+          >
+            🗺 Interactive Map
+          </button>
+          <button
+            type="button"
+            className={`explore-mobile-toggle-btn ${mobileViewTab === "directory" ? "active" : ""}`}
+            onClick={() => setMobileViewTab("directory")}
+          >
+            📋 Stations List ({currentStations.length})
+          </button>
+        </div>
+
+        {/* TAB 1: Mobile Interactive Map */}
+        {mobileViewTab === "map" && (
+          <div className="explore-mobile-map-box">
+            <div className="explore-mobile-map-canvas">
+              <svg className="explore-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path
+                  d={currentRoute.svgPath}
+                  fill="none"
+                  stroke="rgba(99, 102, 241, 0.55)"
+                  strokeWidth="1.2"
+                  strokeDasharray="3 3"
+                />
+              </svg>
+
+              <div className="explore-mobile-map-tag">
+                <span>{currentRoute.title}</span>
+                <span className="tag-alt">{currentStation.altitude}</span>
               </div>
 
-              <button
-                type="button"
-                className="explore-overview-btn"
-                onClick={() => handleRouteSelect("overview")}
-              >
-                ← Back to Topography Overview
-              </button>
+              {/* Station Markers with Touch Targets */}
+              {currentStations.map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  className={`explore-mobile-marker ${st.id === currentStation.id ? "active" : ""}`}
+                  style={{ left: `${st.x}%`, top: `${st.y}%` }}
+                  onClick={() => handleStationClick(st.id)}
+                  aria-label={`Select station ${st.name}`}
+                >
+                  <span className="marker-dot" />
+                  <span className="marker-name">{st.name.split(" ")[0]}</span>
+                </button>
+              ))}
             </div>
+
+            <div className="explore-mobile-hint">
+              Tap any pin above to view station details
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: Station Directory Chips (Quick Switcher) */}
+        {mobileViewTab === "directory" && (
+          <div className="explore-mobile-directory-grid">
+            {currentStations.map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                className={`explore-mobile-directory-item ${st.id === currentStation.id ? "active" : ""}`}
+                onClick={() => handleStationClick(st.id)}
+              >
+                <div className="dir-item-header">
+                  <span className="dir-item-name">{st.name}</span>
+                  <span className="dir-item-alt">{st.altitude}</span>
+                </div>
+                <div className="dir-item-region">{st.region}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Station Detail Card with Apple-Style Progressive Disclosure */}
+        <div className="explore-mobile-station-card">
+          <div className="station-card-top">
+            <div className="station-badge-group">
+              <span className="station-region-badge">{currentStation.region}</span>
+              <span className="station-alt-badge">{currentStation.altitude}</span>
+            </div>
+            <h2 className="station-name-title">{currentStation.name}</h2>
+            <p className="station-subtitle-text">{currentStation.subtitle}</p>
+          </div>
+
+          {/* Progressive Disclosure Section: History & Atelier */}
+          <div className="station-accordion-block">
+            <button
+              type="button"
+              className="station-accordion-toggle"
+              onClick={() => setShowMobileStationDetails(!showMobileStationDetails)}
+              aria-expanded={showMobileStationDetails}
+            >
+              <span>{showMobileStationDetails ? "Hide Chronicler & Atelier Notes" : "View Historic Chronicler & Atelier Notes"}</span>
+              <span className="toggle-symbol" aria-hidden="true">{showMobileStationDetails ? "↑" : "↓"}</span>
+            </button>
+
+            {showMobileStationDetails && (
+              <div className="station-accordion-drawer">
+                <div className="station-drawer-section">
+                  <div className="drawer-section-label">🏛 HISTORIC CHRONICLER</div>
+                  <div className="drawer-chronicler-name">{currentStation.chronicler}</div>
+                  <p className="drawer-quote">“{currentStation.quote}”</p>
+                </div>
+
+                <div className="station-drawer-section" style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
+                  <div className="drawer-section-label">🎨 CREATIVE ATELIER EXERCISE</div>
+                  <p className="drawer-exercise-p">{currentStation.exercise}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      {/* Bottom 5 Pill Filter Buttons */}
-      <div className="explore-bottom-pills-row animate-enter-4" role="tablist" aria-label="Route Selectors">
-        {routePills.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className={`explore-pill-btn ${activeRouteId === p.id ? "active" : ""}`}
-            onClick={() => handleRouteSelect(p.id)}
-            role="tab"
-            aria-selected={activeRouteId === p.id}
-          >
-            {p.label}
-          </button>
-        ))}
       </div>
     </div>
   );
