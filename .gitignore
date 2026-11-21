@@ -1,7 +1,12 @@
 node_modules/
 dist/
+scratch/
 .env
 .env.*
 !.env.example
 .figma/
 .DS_Store
+package/
+penpot-mcp/
+.penpot-mcp/
+*.tgz
