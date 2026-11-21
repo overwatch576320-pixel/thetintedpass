@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Calendar, BookOpen, Feather, ArrowRight, User } from "lucide-react";
+import HorizontalScrollStrip from "./HorizontalScrollStrip";
 
 const timelineEvents = [
   {
@@ -74,21 +75,28 @@ export default function ExpeditionTimeline() {
         </p>
       </div>
 
-      {/* Cinematic Horizontal Station Selector */}
-      <div className="timeline-selector-track">
+      {/* Cinematic Horizontal Station Selector with Dynamic Edge Fade */}
+      <HorizontalScrollStrip
+        className="timeline-selector-track"
+        role="tablist"
+        aria-label="Historical Milestones"
+        activeKey={activeIndex}
+      >
         {timelineEvents.map((evt, idx) => (
           <button
             key={evt.year}
             type="button"
             className={`timeline-milestone-btn ${activeIndex === idx ? "active" : ""}`}
             onClick={() => setActiveIndex(idx)}
+            role="tab"
+            aria-selected={activeIndex === idx}
           >
             <span className="milestone-year">{evt.year}</span>
             <span className="milestone-figure">{evt.figure}</span>
             <span className="milestone-era">{evt.era}</span>
           </button>
         ))}
-      </div>
+      </HorizontalScrollStrip>
 
       {/* Active Milestone Cinematic Card */}
       <div className="timeline-active-stage">

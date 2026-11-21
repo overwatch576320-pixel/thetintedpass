@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, BookOpen, X, Calendar, MapPin, User, Tag } from "lucide-react";
 import { useSiteContent } from "../context/SiteContentContext";
+import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
 
 export default function Journal() {
   const { content } = useSiteContent();
@@ -26,19 +27,26 @@ export default function Journal() {
         </p>
       </div>
 
-      {/* Category Filter Tabs */}
-      <div className="journal-category-tabs">
+      {/* Category Filter Tabs with Dynamic Edge Fade */}
+      <HorizontalScrollStrip
+        className="journal-category-tabs"
+        role="tablist"
+        aria-label="Journal Categories"
+        activeKey={activeCategory}
+      >
         {categories.map((cat) => (
           <button
             key={cat}
             type="button"
             className={`journal-tab-btn ${activeCategory === cat ? "active" : ""}`}
             onClick={() => setActiveCategory(cat)}
+            role="tab"
+            aria-selected={activeCategory === cat}
           >
             {cat}
           </button>
         ))}
-      </div>
+      </HorizontalScrollStrip>
 
       {/* Grid of Journal Dispatches */}
       <div className="journal-cards-grid">

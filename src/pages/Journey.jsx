@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
+import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
 
 const STATION_ALTITUDES = {
   "Leh": "3,524 m",
@@ -207,11 +208,12 @@ export default function Journey() {
             </div>
           </div>
 
-          {/* Horizontally Scrollable Filter Strip */}
-          <div
+          {/* Horizontally Scrollable Filter Strip with Dynamic Edge Fade */}
+          <HorizontalScrollStrip
             className={`journey-filters-row animate-enter-3 ${transitionState === "exiting-overview" ? "is-exiting" : ""}`}
             role="tablist"
             aria-label="Filter Expeditions by Duration"
+            activeKey={filterDuration}
           >
             <button
               type="button"
@@ -258,7 +260,7 @@ export default function Journey() {
             >
               15 Days
             </button>
-          </div>
+          </HorizontalScrollStrip>
 
           {/* DESKTOP 4-CARDS GRID (>= 1024px, Exact Approved Single-Viewport Layout) */}
           <div

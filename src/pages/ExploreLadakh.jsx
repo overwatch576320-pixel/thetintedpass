@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
+import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
 
 // Comprehensive Authentic Stations across Ladakh
 const allStationsData = [
@@ -454,8 +455,13 @@ export default function ExploreLadakh() {
           </p>
         </div>
 
-        {/* Route Selector Chips (Mobile Horizontal Scrollable) */}
-        <div className="explore-mobile-routes-strip" role="tablist" aria-label="Expedition Routes">
+        {/* Route Selector Chips with Dynamic Edge Fade */}
+        <HorizontalScrollStrip
+          className="explore-mobile-routes-strip"
+          role="tablist"
+          aria-label="Expedition Routes"
+          activeKey={activeRouteId}
+        >
           {routePills.map((p) => (
             <button
               key={p.id}
@@ -468,7 +474,7 @@ export default function ExploreLadakh() {
               {p.label}
             </button>
           ))}
-        </div>
+        </HorizontalScrollStrip>
 
         {/* Mobile View Mode Segmented Control */}
         <div className="explore-mobile-view-toggle">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { expeditionLandmarks, journeyItineraries } from "../data/siteData";
 import { Mountain, Compass, Sparkles, User, Layers, ArrowUpRight, Check, Eye } from "lucide-react";
+import HorizontalScrollStrip from "./HorizontalScrollStrip";
 
 // Georeferenced coordinate layout for Ladakh geography onto 1000x620 canvas
 const mapNodes = {
@@ -173,11 +174,18 @@ export default function ExpeditionMap({ selectedJourneyId, onSelectJourney, onOp
     <div className="cartography-lake-como-shell" id="ladakh-map-explorer">
       {/* Top Bar: Route Selectors & Legend */}
       <div className="cartography-top-controls">
-        <div className="cartography-route-tabs">
+        <HorizontalScrollStrip
+          className="cartography-route-tabs"
+          role="tablist"
+          aria-label="Expedition Routes"
+          activeKey={activeRouteId}
+        >
           <button
             type="button"
             className={`map-route-tab ${activeRouteId === "all" ? "active" : ""}`}
             onClick={() => handleRouteSelect("all")}
+            role="tab"
+            aria-selected={activeRouteId === "all"}
           >
             All Destinations Overview
           </button>
@@ -187,11 +195,13 @@ export default function ExpeditionMap({ selectedJourneyId, onSelectJourney, onOp
               type="button"
               className={`map-route-tab ${activeRouteId === j.slug ? "active" : ""}`}
               onClick={() => handleRouteSelect(j.slug)}
+              role="tab"
+              aria-selected={activeRouteId === j.slug}
             >
               <span>{j.length}</span> · {j.title}
             </button>
           ))}
-        </div>
+        </HorizontalScrollStrip>
 
         <div className="cartography-meta-badge">
           <Compass size={13} />

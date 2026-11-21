@@ -6244,3 +6244,179 @@ body.mobile-menu-active {
     transform: none !important;
   }
 }
+
+
+/* ==========================================================================
+   REFINED HORIZONTAL SCROLLING & DYNAMIC EDGE FADE SYSTEM
+   Apple-inspired momentum scrolling, proximity snap, and universal alpha-mask edge fading
+   Works over any background: cyan, white, frosted glass, or dark surfaces
+   ========================================================================== */
+
+.scroll-edge-fade {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x pan-y !important;
+  overscroll-behavior-x: contain !important;
+  scroll-snap-type: x proximity !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  box-sizing: border-box !important;
+  --fade-width: 28px;
+  
+  /* Fallback: fully visible until measured */
+  mask-image: none;
+  -webkit-mask-image: none;
+  transition: -webkit-mask-image 0.22s cubic-bezier(0.16, 1, 0.3, 1), mask-image 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-edge-fade::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Subtle proximity snap on children without rigid locking */
+.scroll-edge-fade > * {
+  flex-shrink: 0 !important;
+  scroll-snap-align: start;
+  scroll-margin: 0 8px;
+}
+
+/* State 1: Content overflows and user is at start (fade right edge only) */
+.scroll-edge-fade.has-scroll-overflow.can-scroll-right:not(.can-scroll-left) {
+  mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 calc(100% - var(--fade-width, 28px)),
+    rgba(0, 0, 0, 0.85) calc(100% - (var(--fade-width, 28px) * 0.65)),
+    rgba(0, 0, 0, 0.35) calc(100% - (var(--fade-width, 28px) * 0.28)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 calc(100% - var(--fade-width, 28px)),
+    rgba(0, 0, 0, 0.85) calc(100% - (var(--fade-width, 28px) * 0.65)),
+    rgba(0, 0, 0, 0.35) calc(100% - (var(--fade-width, 28px) * 0.28)),
+    transparent 100%
+  );
+}
+
+/* State 2: Content overflows and user is at end (fade left edge only) */
+.scroll-edge-fade.has-scroll-overflow.can-scroll-left:not(.can-scroll-right) {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) calc(var(--fade-width, 28px) * 0.28),
+    rgba(0, 0, 0, 0.85) calc(var(--fade-width, 28px) * 0.65),
+    #000 var(--fade-width, 28px),
+    #000 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) calc(var(--fade-width, 28px) * 0.28),
+    rgba(0, 0, 0, 0.85) calc(var(--fade-width, 28px) * 0.65),
+    #000 var(--fade-width, 28px),
+    #000 100%
+  );
+}
+
+/* State 3: User is scrolling in the middle (fade both edges) */
+.scroll-edge-fade.has-scroll-overflow.can-scroll-left.can-scroll-right {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) calc(var(--fade-width, 28px) * 0.28),
+    rgba(0, 0, 0, 0.85) calc(var(--fade-width, 28px) * 0.65),
+    #000 var(--fade-width, 28px),
+    #000 calc(100% - var(--fade-width, 28px)),
+    rgba(0, 0, 0, 0.85) calc(100% - (var(--fade-width, 28px) * 0.65)),
+    rgba(0, 0, 0, 0.35) calc(100% - (var(--fade-width, 28px) * 0.28)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) calc(var(--fade-width, 28px) * 0.28),
+    rgba(0, 0, 0, 0.85) calc(var(--fade-width, 28px) * 0.65),
+    #000 var(--fade-width, 28px),
+    #000 calc(100% - var(--fade-width, 28px)),
+    rgba(0, 0, 0, 0.85) calc(100% - (var(--fade-width, 28px) * 0.65)),
+    rgba(0, 0, 0, 0.35) calc(100% - (var(--fade-width, 28px) * 0.28)),
+    transparent 100%
+  );
+}
+
+/* State 4: Content does NOT overflow (no masks, completely sharp edge-to-edge) */
+.scroll-edge-fade:not(.has-scroll-overflow) {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   REFINED MOBILE TAB & PILL INTERACTION ANIMATIONS (Apple Polish)
+   Smooth background / color transitions, no jarring scaling or neighboring shifts
+   -------------------------------------------------------------------------- */
+
+.philosophy-tab-btn,
+.journey-filter-pill,
+.dossier-mobile-day-pill,
+.explore-mobile-route-chip,
+.art-mobile-chip-btn,
+.journal-tab-btn,
+.timeline-milestone-btn {
+  transition: background-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Stable active press feedback without scaling */
+.philosophy-tab-btn:active,
+.journey-filter-pill:active,
+.dossier-mobile-day-pill:active,
+.explore-mobile-route-chip:active,
+.art-mobile-chip-btn:active,
+.journal-tab-btn:active,
+.timeline-milestone-btn:active {
+  transform: none !important;
+  opacity: 0.85;
+}
+
+/* Selected pill highlights with crystal clarity */
+.philosophy-tab-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.28) !important;
+}
+
+.journey-filter-pill.active,
+.dossier-mobile-day-pill.active,
+.explore-mobile-route-chip.active,
+.art-mobile-chip-btn.active {
+  background: #ffffff !important;
+  color: #0284c7 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+@media (max-width: 360px) {
+  .scroll-edge-fade {
+    --fade-width: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-edge-fade {
+    scroll-snap-type: none !important;
+    transition: none !important;
+  }
+  .scroll-edge-fade * {
+    transition: none !important;
+  }
+}

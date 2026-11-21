@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
+import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
+import useTouchSwipe from "../hooks/useTouchSwipe";
 import manifestoImage from "../assets/manifesto-ladakh-easel.jpg";
 
 const PHILOSOPHY_CHAPTERS = [
@@ -94,6 +96,12 @@ export default function Philosophy() {
     setActiveChapterIndex((prev) => (prev - 1 + PHILOSOPHY_CHAPTERS.length) % PHILOSOPHY_CHAPTERS.length);
   };
 
+  // High-precision horizontal touch swipe navigation between chapters
+  const { swipeHandlers } = useTouchSwipe({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrev,
+  });
+
   return (
     <div className="philosophy-container">
       {/* Left Column: Heading and Description */}
@@ -111,8 +119,13 @@ export default function Philosophy() {
       {/* Right Column: Enlarged White Card with Interactive Chapters */}
       <div className="philosophy-right-col">
         <div className="philosophy-white-card animate-enter-3">
-          {/* Top Chapter Tabs Strip */}
-          <div className="philosophy-tabs-strip" role="tablist" aria-label="Philosophy Chapters">
+          {/* Top Chapter Tabs Strip with Dynamic Edge Fade */}
+          <HorizontalScrollStrip
+            className="philosophy-tabs-strip"
+            role="tablist"
+            aria-label="Philosophy Chapters"
+            activeKey={activeChapterIndex}
+          >
             {PHILOSOPHY_CHAPTERS.map((ch, idx) => (
               <button
                 key={ch.id}
@@ -129,10 +142,14 @@ export default function Philosophy() {
                 <span>{ch.tabLabel}</span>
               </button>
             ))}
-          </div>
+          </HorizontalScrollStrip>
 
-          {/* Main Card Content (Artwork + Manifesto Excerpt) */}
-          <div key={activeChapter.id} className="philosophy-card-content discipline-crossfade">
+          {/* Main Card Content (Artwork + Manifesto Excerpt with Touch Swipe) */}
+          <div
+            key={activeChapter.id}
+            className="philosophy-card-content discipline-crossfade"
+            {...swipeHandlers}
+          >
             <SolidPlaceholder
               slotId={activeChapter.slotId}
               src={activeChapter.image}

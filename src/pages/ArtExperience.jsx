@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
+import HorizontalScrollStrip from "../components/HorizontalScrollStrip";
+import useTouchSwipe from "../hooks/useTouchSwipe";
 
 const practices = [
   {
@@ -56,6 +58,23 @@ export default function ArtExperience() {
   const [showMobileDetails, setShowMobileDetails] = useState(false);
 
   const currentPractice = practices.find((p) => p.id === activePracticeId) || practices[0];
+  const currentIdx = practices.findIndex((p) => p.id === activePracticeId);
+
+  const handleNextPractice = () => {
+    const nextIdx = (currentIdx + 1) % practices.length;
+    setActivePracticeId(practices[nextIdx].id);
+  };
+
+  const handlePrevPractice = () => {
+    const prevIdx = (currentIdx - 1 + practices.length) % practices.length;
+    setActivePracticeId(practices[prevIdx].id);
+  };
+
+  // Fluid touch swipe between art practices on mobile
+  const { swipeHandlers } = useTouchSwipe({
+    onSwipeLeft: handleNextPractice,
+    onSwipeRight: handlePrevPractice,
+  });
 
   return (
     <div className="art-exp-container">
@@ -140,8 +159,13 @@ export default function ArtExperience() {
           </p>
         </div>
 
-        {/* 4 Selectable Discipline Chips / Segmented Control */}
-        <div className="art-mobile-chips-row" role="tablist" aria-label="Atelier Disciplines">
+        {/* 4 Selectable Discipline Chips / Segmented Control with Dynamic Edge Fade */}
+        <HorizontalScrollStrip
+          className="art-mobile-chips-row"
+          role="tablist"
+          aria-label="Atelier Disciplines"
+          activeKey={activePracticeId}
+        >
           {practices.map((practice) => (
             <button
               key={practice.id}
@@ -157,10 +181,10 @@ export default function ArtExperience() {
               <span>{practice.shortLabel}</span>
             </button>
           ))}
-        </div>
+        </HorizontalScrollStrip>
 
-        {/* Active Discipline Card */}
-        <div className="art-mobile-card">
+        {/* Active Discipline Card with Horizontal Touch Swipe */}
+        <div className="art-mobile-card" {...swipeHandlers}>
           <SolidPlaceholder
             slotId="artExperienceHero"
             className="art-mobile-image-slot"

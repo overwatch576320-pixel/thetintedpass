@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
 import SolidPlaceholder from "../components/SolidPlaceholder";
+import useScrollEdgeFade from "../hooks/useScrollEdgeFade";
+import useTouchSwipe from "../hooks/useTouchSwipe";
 
 export default function ExpeditionDetail() {
   const { slug } = useParams();
@@ -35,6 +37,25 @@ export default function ExpeditionDetail() {
   const mobilePillRefs = useRef([]);
   const navStripRef = useRef(null);
   const mobileNavStripRef = useRef(null);
+
+  // Reusable horizontal edge fade with auto-centering
+  useScrollEdgeFade({
+    externalRef: mobileNavStripRef,
+    activeKey: selectedDayIdx,
+    activeSelector: ".dossier-mobile-day-pill.active",
+  });
+
+  useScrollEdgeFade({
+    externalRef: navStripRef,
+    activeKey: selectedDayIdx,
+    activeSelector: ".expedition-day-pill.active",
+  });
+
+  // Fluid touch swipe between itinerary days on mobile
+  const { swipeHandlers: dayCardSwipeHandlers } = useTouchSwipe({
+    onSwipeLeft: () => handleSelectDay(selectedDayIdx + 1),
+    onSwipeRight: () => handleSelectDay(selectedDayIdx - 1),
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => setIsEntering(false), 400);
@@ -192,7 +213,7 @@ export default function ExpeditionDetail() {
                   </button>
                 </div>
               </div>
-              <div ref={navStripRef} className="expedition-days-nav-strip" role="tablist" aria-label="Itinerary Days">
+              <div ref={navStripRef} className="expedition-days-nav-strip scroll-edge-fade" role="tablist" aria-label="Itinerary Days">
                 {days.map((d, idx) => (
                   <button
                     key={idx}
@@ -350,7 +371,7 @@ export default function ExpeditionDetail() {
 
           <div
             ref={mobileNavStripRef}
-            className="dossier-mobile-pills-strip"
+            className="dossier-mobile-pills-strip scroll-edge-fade"
             role="tablist"
             aria-label="Itinerary Day Selector"
           >
@@ -377,8 +398,8 @@ export default function ExpeditionDetail() {
           </div>
         </div>
 
-        {/* C. Daily Information Primary Card */}
-        <div className="dossier-mobile-day-card animate-enter-2">
+        {/* C. Daily Information Primary Card with Horizontal Swipe */}
+        <div className="dossier-mobile-day-card animate-enter-2" {...dayCardSwipeHandlers}>
           {/* Day Headline & Metadata */}
           <div className="dossier-mobile-day-header">
             <div className="dossier-mobile-day-tag">
