@@ -111,6 +111,7 @@ html, body {
   margin: 0;
   padding: 0;
   overflow: hidden !important;
+  overflow-x: hidden !important;
   background-color: var(--sky-top);
   font-family: var(--font-sans);
   color: var(--text-white);
@@ -122,6 +123,7 @@ html, body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  overflow-x: hidden !important;
 }
 
 /* --- Fixed Viewport Container & Atmospheric Living Canvas --- */
@@ -134,6 +136,7 @@ html, body {
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
+  overflow-x: hidden !important;
   background-color: var(--sky-top);
   z-index: 1;
 }
@@ -297,6 +300,11 @@ html, body {
 
 .mobile-nav-toggle:active {
   transform: scale(0.92);
+}
+
+/* Mobile Navigation Drawer (Hidden on Desktop & Tablet by default) */
+.mobile-drawer {
+  display: none !important;
 }
 
 /* --- Main Viewport Canvas & Seamless Page Transitions --- */
@@ -2722,6 +2730,7 @@ html, body {
   flex-direction: column;
   justify-content: space-between;
   transition: opacity 0.22s ease, transform 0.22s ease;
+  overflow-x: hidden !important;
 }
 
 .expedition-dossier-container.is-entering {
@@ -3455,7 +3464,7 @@ html, body {
     -webkit-backdrop-filter: blur(28px);
     backdrop-filter: blur(28px);
     z-index: 1000;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     justify-content: space-between;
     padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--gutter-mobile) calc(var(--space-6) + env(safe-area-inset-bottom, 0px)) var(--gutter-mobile);

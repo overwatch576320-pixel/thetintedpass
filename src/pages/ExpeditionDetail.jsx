@@ -59,11 +59,20 @@ export default function ExpeditionDetail() {
     setIsSwitchingDay(true);
     setTimeout(() => {
       setSelectedDayIdx(idx);
-      pillRefs.current[idx]?.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest"
-      });
+      const strip = navStripRef.current;
+      const pill = pillRefs.current[idx];
+      if (strip && pill) {
+        const pillLeft = pill.offsetLeft;
+        const pillWidth = pill.offsetWidth;
+        const stripWidth = strip.clientWidth;
+        strip.scrollTo({
+          left: pillLeft - stripWidth / 2 + pillWidth / 2,
+          behavior: "smooth"
+        });
+      }
+      if (typeof window !== "undefined" && (window.scrollX !== 0 || window.pageXOffset !== 0)) {
+        window.scrollTo({ left: 0, top: window.scrollY });
+      }
       setTimeout(() => {
         setIsSwitchingDay(false);
       }, 50);

@@ -121,54 +121,54 @@ export default function SiteLayout({ children }) {
         >
           {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-
-        {/* Mobile Navigation Drawer with Smooth Backdrop & Slide */}
-        <div
-          className={`mobile-drawer ${mobileMenuOpen ? "is-open" : ""}`}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Mobile Navigation Menu"
-        >
-          <div className="mobile-drawer-header">
-            <span className="mobile-drawer-season">
-              {content.seasonalLabel || "ATELIER SEASON 2026"}
-            </span>
-            <button
-              type="button"
-              className="mobile-drawer-close-btn"
-              onClick={() => setMobileMenuOpen(false)}
-              aria-label="Close navigation menu"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <nav className="mobile-drawer-nav" aria-label="Mobile Menu Links">
-            {navLinks.map((item, idx) => {
-              const active = isCurrentActive(item.path);
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`mobile-drawer-link ${active ? "active" : ""}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="mobile-drawer-link-num">0{idx + 1}</span>
-                  <span className="mobile-drawer-link-text">{item.label}</span>
-                  {active && <span className="mobile-drawer-link-badge">ACTIVE</span>}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="mobile-drawer-footer">
-            <div className="mobile-drawer-geo">
-              {content.geoStrip || "LADAKH, TRANS-HIMALAYAS · 3,500M - 5,360M"}
-            </div>
-            <div className="mobile-drawer-credit">THE TINTED PASS · ATELIER COHORTS</div>
-          </div>
-        </div>
       </header>
+
+      {/* Mobile Navigation Drawer with Smooth Backdrop & Slide (Placed outside header flex container) */}
+      <div
+        className={`mobile-drawer ${mobileMenuOpen ? "is-open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile Navigation Menu"
+      >
+        <div className="mobile-drawer-header">
+          <span className="mobile-drawer-season">
+            {content.seasonalLabel || "ATELIER SEASON 2026"}
+          </span>
+          <button
+            type="button"
+            className="mobile-drawer-close-btn"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Close navigation menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="mobile-drawer-nav" aria-label="Mobile Menu Links">
+          {navLinks.map((item, idx) => {
+            const active = isCurrentActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`mobile-drawer-link ${active ? "active" : ""}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span className="mobile-drawer-link-num">0{idx + 1}</span>
+                <span className="mobile-drawer-link-text">{item.label}</span>
+                {active && <span className="mobile-drawer-link-badge">ACTIVE</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mobile-drawer-footer">
+          <div className="mobile-drawer-geo">
+            {content.geoStrip || "LADAKH, TRANS-HIMALAYAS · 3,500M - 5,360M"}
+          </div>
+          <div className="mobile-drawer-credit">THE TINTED PASS · ATELIER COHORTS</div>
+        </div>
+      </div>
 
       {/* Main Single-Viewport Page Body with Seamless Stage Transitions */}
       <main className="site-main-viewport">
