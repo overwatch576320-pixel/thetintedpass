@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { journeyItineraries, expeditionLandmarks, artisticPractices, fieldNotesJournal } from "../data/siteData";
 import { defaultAssetConfig } from "../data/assets";
+import { defaultSketchbookConfig } from "../data/defaultSketchbook";
 import { supabase } from "../lib";
 
 const SiteContentContext = createContext(null);

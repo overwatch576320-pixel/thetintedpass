@@ -1,0 +1,1048 @@
+/* ==========================================================================
+   TINTED PASS — 3D HIMALAYAN ARTIST'S SKETCHBOOK
+   Based on open-source implementation by Niyas (niyamax/sketchbook, MIT License)
+   Strictly scoped styles that do NOT interfere with existing website layout.
+   ========================================================================== */
+
+:root {
+  --sketchbook-ink: #1c2730;
+  --sketchbook-muted: #576574;
+  --sketchbook-accent: #2c7da0;
+  --sketchbook-paper: #fcf9f2;
+  --sketchbook-paper-shadow: rgba(18, 25, 33, 0.08);
+  --sketchbook-cover: #1a2522; /* Deep Himalayan slate/forest green */
+  --sketchbook-cover-edge: #0a110f;
+  --sketchbook-control-radius: 8px;
+}
+
+/* Master Root Wrapper */
+.tinted-sketchbook-root {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tinted-sketchbook-root *,
+.tinted-sketchbook-root *::before,
+.tinted-sketchbook-root *::after {
+  box-sizing: border-box;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* --- Cover Aesthetics --- */
+.sketchbook-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 0 16px 16px 0;
+  background-color: var(--sketchbook-cover);
+  box-shadow: inset 2px 0 4px rgba(255, 255, 255, 0.08), inset -2px 0 4px rgba(0, 0, 0, 0.4);
+}
+
+.sketchbook-cover.is-back-cover {
+  border-radius: 16px 0 0 16px;
+}
+
+.cover-stock-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+}
+
+.sketchbook-cover-foil-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.sketchbook-cover-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.cover-eyebrow-text {
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  color: #dfd5be;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.cover-center-artwork {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(223, 213, 190, 0.4);
+  padding: 4px;
+}
+
+.cover-center-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.cover-main-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f7eed8;
+  text-transform: uppercase;
+  margin: 0;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.cover-rule-divider {
+  width: 36px;
+  height: 1.5px;
+  background: #c7b286;
+  margin: 16px auto;
+  opacity: 0.8;
+}
+
+.cover-subtitle-text {
+  font-family: var(--font-sans, sans-serif);
+  font-size: 11px;
+  color: #d1c7b2;
+  line-height: 1.45;
+  max-width: 240px;
+  margin: 0 0 24px 0;
+}
+
+.cover-footer-brand {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #b5a990;
+}
+
+.sketchbook-back-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.back-monogram-symbol {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 32px;
+  color: #e5dac2;
+  letter-spacing: 0.1em;
+}
+
+.back-atelier-mark {
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: #d8ceb7;
+}
+
+.back-edition-note {
+  font-family: var(--font-mono, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: #9c9179;
+  margin-top: 8px;
+}
+
+/* --- Inside Covers --- */
+.sketch-inside-cover {
+  width: 100%;
+  height: 100%;
+}
+
+.inside-cover-plate {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  padding: 36px 30px;
+}
+
+.inside-cover-monogram {
+  font-family: var(--font-display, serif);
+  font-size: 28px;
+  color: #334155;
+  margin-bottom: 12px;
+}
+
+.inside-cover-heading {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+}
+
+.inside-cover-subtitle {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: #475569;
+  margin: 0 0 16px 0;
+}
+
+.inside-cover-rule {
+  width: 32px;
+  height: 1px;
+  background: #cbd5e1;
+  margin: 10px auto;
+}
+
+.inside-cover-text {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: #64748b;
+  max-width: 220px;
+  margin: 0 0 16px 0;
+}
+
+.inside-cover-edition,
+.inside-cover-footer {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.15em;
+  color: #94a3b8;
+}
+
+/* --- Page Structure --- */
+.sketch-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--sketchbook-paper);
+}
+
+.sketch-page.is-left {
+  border-radius: 14px 0 0 14px;
+}
+
+.sketch-page.is-right {
+  border-radius: 0 14px 14px 0;
+}
+
+.sketch-paper.mobile-book-paper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 24px 20px 20px 20px;
+  overflow: hidden;
+  background: var(--sketchbook-paper);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.sketch-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.sketch-page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: #cbd5e1;
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+/* --- 7 Page Templates --- */
+
+/* Template 1: Full-Page Artwork */
+.template-full-artwork {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sketch-artwork-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.sketch-illustration {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  mix-blend-mode: multiply;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sketch-artwork-caption-block {
+  margin-top: 10px;
+}
+
+.sketch-artwork-title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 3px 0;
+}
+
+.sketch-artwork-caption {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: #475569;
+  margin: 0 0 4px 0;
+}
+
+.sketch-artwork-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+/* Template 2: Photograph with Field Notes */
+.template-photo-notes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sketch-photo-frame {
+  height: 52%;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.sketch-notes-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.sketch-notes-title {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.sketch-notes-p {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: #334155;
+  margin: 0 0 8px 0;
+}
+
+.sketch-notes-field-memo {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  background: #f1ebd8;
+  padding: 6px 8px;
+  border-radius: 4px;
+  color: #57534e;
+  border-left: 2px solid #854d0e;
+}
+
+.memo-marker {
+  font-weight: bold;
+  color: #854d0e;
+}
+
+/* Template 3: Sketch and Annotation */
+.template-sketch-annotation {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sketch-annotated-canvas {
+  position: relative;
+  flex: 1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sketch-annotation-pin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: #1e293b;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.pin-dot {
+  color: #0284c7;
+  font-size: 8px;
+}
+
+.sketch-annotation-footer {
+  margin-top: 8px;
+}
+
+/* Template 4: Two-Image Spread */
+.template-two-image {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sketch-notes-title-small {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+}
+
+.two-image-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  height: 58%;
+  margin-bottom: 8px;
+}
+
+.dual-image-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f1ebd8;
+}
+
+.dual-image-caption {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 4px 6px;
+  color: #64748b;
+  text-align: center;
+  background: #eae2ca;
+}
+
+.sketch-notes-p-small {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 1.45;
+  color: #475569;
+  margin: 0;
+}
+
+/* Template 5: Map & Route Study */
+.template-map-route {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sketch-map-frame {
+  position: relative;
+  height: 52%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #e2d9c2;
+  margin-bottom: 10px;
+}
+
+.map-compass-mark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #475569;
+}
+
+.map-dossier-notes {
+  flex: 1;
+}
+
+.map-station-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+
+/* Template 6: Material Study */
+.template-material-study {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.material-study-header {
+  margin-bottom: 8px;
+}
+
+.material-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: #0369a1;
+  text-transform: uppercase;
+}
+
+.material-swatches-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.swatch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.swatch-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  margin-bottom: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.swatch-name {
+  font-family: var(--font-sans);
+  font-size: 8px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.swatch-code {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  color: #64748b;
+}
+
+.material-specimen-photo {
+  height: 38%;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+/* Template 7: Editorial Page */
+.template-editorial {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.editorial-chapter-number {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: #0369a1;
+  margin-bottom: 4px;
+}
+
+.editorial-main-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  line-height: 1.25;
+}
+
+.editorial-pull-quote {
+  font-family: var(--font-display, Georgia, serif);
+  font-style: italic;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #334155;
+  margin: 0 0 10px 0;
+  padding-left: 10px;
+  border-left: 2px solid #38bdf8;
+}
+
+.editorial-body-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.editorial-inset-image {
+  width: 65px;
+  height: 65px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editorial-body-p {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  line-height: 1.5;
+  color: #475569;
+  margin: 0;
+}
+
+/* --- Desktop 3D Viewport --- */
+.sketch-desktop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  width: 100%;
+}
+
+.sketch-desktop-frame {
+  position: relative;
+  flex-shrink: 0;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.sketch-desktop-frame:active {
+  cursor: grabbing;
+}
+
+.sketch-desktop-dom {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  pointer-events: none;
+}
+
+.sketch-dom-page {
+  width: 50%;
+  height: 100%;
+}
+
+.has-desktop-paper .sketch-desktop-dom {
+  opacity: 0;
+}
+
+.sketch-page-sources {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sketch-page-source {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.sketch-desktop-canvas {
+  display: none;
+  position: absolute;
+  width: 135%;
+  height: 160%;
+  left: -17.5%;
+  top: -30%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.has-desktop-paper .sketch-desktop-canvas {
+  display: block;
+}
+
+.sketch-desktop-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sketch-spread-ground {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sketch-spread-ground span {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.sketch-spread-ground span:first-child {
+  left: 0;
+  border-radius: 14px 0 0 14px;
+}
+
+.sketch-spread-ground span:last-child {
+  left: 50%;
+  border-radius: 0 14px 14px 0;
+}
+
+.sketch-desktop-dom .sketch-dom-page:first-child .sketch-paper {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.14), transparent 44px), var(--sketchbook-paper);
+}
+
+.sketch-desktop-dom .sketch-dom-page:last-child .sketch-paper {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent 44px), var(--sketchbook-paper);
+}
+
+/* Desktop Side Chevrons */
+.sketch-side-navigation {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: 44px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.sketch-side-navigation button {
+  position: absolute;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 200ms ease-out, transform 150ms ease, background 150ms ease;
+  cursor: pointer;
+}
+
+.sketch-side-navigation button:first-child {
+  left: -58px;
+}
+
+.sketch-side-navigation button:last-child {
+  right: -58px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sketch-side-navigation button:hover:not(:disabled) {
+    background: #ffffff;
+    transform: scale(1.08);
+  }
+}
+
+.sketch-side-navigation button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.sketch-side-navigation button:disabled,
+.sketch-side-navigation.is-cover-moving button {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: none;
+}
+
+/* --- Mobile Folded Reader --- */
+.sketch-mobile-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 16px 20px 24px 20px;
+}
+
+.mobile-book-reader {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.mobile-folded-book {
+  --book-paper: var(--sketchbook-paper);
+  --book-canvas-scale-x: 2.8;
+  --book-canvas-scale-y: 1.6;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  margin: 0 auto;
+  touch-action: pan-y pinch-zoom;
+  isolation: isolate;
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.mobile-folded-book.is-turning {
+  cursor: grabbing;
+}
+
+.mobile-book-binding {
+  position: absolute;
+  inset: 1px -3px -7px -8px;
+  border-radius: 7px;
+  background: var(--sketchbook-cover);
+  box-shadow: -1px 1px 2px rgba(80, 82, 49, 0.18), 2px 20px 22px -13px rgba(81, 67, 47, 0.22);
+}
+
+.mobile-book-paper-edges {
+  position: absolute;
+  inset: 0 -3px -5px -2px;
+  border-radius: 1px 2px 3px 1px;
+  background: repeating-linear-gradient(0deg, #dcd6c9 0 1px, #fbf7eb 1px 2px);
+  border-right: 1px solid #e2dcce;
+  box-shadow: -3px 0 #f2eddf, -5px 1px #d6c6ab;
+}
+
+.mobile-book-resting-page,
+.mobile-book-under-source {
+  position: absolute;
+  inset: 0;
+}
+
+.mobile-book-under-source {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.has-paper-renderer .mobile-book-resting-page {
+  opacity: 0;
+}
+
+.has-paper-renderer .mobile-book-binding,
+.has-paper-renderer .mobile-book-paper-edges {
+  display: none;
+}
+
+.mobile-book-canvas {
+  display: none;
+  position: absolute;
+  width: calc(var(--book-canvas-scale-x) * 100%);
+  height: calc(var(--book-canvas-scale-y) * 100%);
+  left: calc((1 - var(--book-canvas-scale-x)) * 50%);
+  top: calc((1 - var(--book-canvas-scale-y)) * 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.has-paper-renderer .mobile-book-canvas {
+  display: block;
+}
+
+.mobile-book-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.mobile-book-edge {
+  z-index: 3;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  background: none;
+  border: 0;
+  padding: 0;
+  touch-action: pan-y !important;
+}
+
+.mobile-book-edge-left {
+  left: 0;
+}
+
+.mobile-book-edge-right {
+  right: 0;
+}
+
+.mobile-book-edge:disabled {
+  pointer-events: none;
+}
+
+.mobile-book-navigation.is-minimal {
+  position: absolute;
+  top: 50%;
+  left: -48px;
+  right: -48px;
+  height: 44px;
+  margin: 0;
+  transform: translateY(-50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.mobile-book-navigation.is-minimal button {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.mobile-book-navigation.is-minimal button:first-child {
+  left: 0;
+}
+
+.mobile-book-navigation.is-minimal button:last-child {
+  right: 0;
+}
+
+.mobile-book-navigation.is-minimal button:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.mobile-book-css-ground {
+  display: none;
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.has-paper-renderer .mobile-book-css-ground {
+  display: block;
+}
+
+.mobile-book-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- Attribution & Loading --- */
+.sketch-loading-notice {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: #64748b;
+  padding: 40px;
+  text-align: center;
+}
+
+.sketchbook-credit-bar {
+  text-align: center;
+  padding: 8px 16px;
+  margin-top: 10px;
+}
+
+.credit-text {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 0.05em;
+}
+
+.credit-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.credit-link:hover {
+  color: #38bdf8;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .tinted-sketchbook-root * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

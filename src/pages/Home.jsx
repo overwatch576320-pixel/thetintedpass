@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { useSiteContent } from "../context/SiteContentContext";
+import Sketchbook from "../components/sketchbook/Sketchbook";
 
 export default function Home() {
   const { content } = useSiteContent();
+  const sketchbook = content.sketchbook || {};
+  const isSketchbookEnabled = sketchbook.enabled !== false;
 
   return (
     <div className="home-page-container">
@@ -45,6 +48,30 @@ export default function Home() {
           <span>Atelier Cohorts 2026 · Capped at 6–10 Artists</span>
         </div>
       </div>
+
+      {/* Interactive 3D Artist's Sketchbook Editorial Feature */}
+      {isSketchbookEnabled && (
+        <section
+          className="home-sketchbook-stage animate-enter-2"
+          aria-label="Expedition Field Journal"
+        >
+          <div className="home-sketchbook-editorial-header">
+            <span className="home-sketchbook-eyebrow">
+              {sketchbook.sectionEyebrow || "FIELD NOTES FROM THE HIMALAYAS"}
+            </span>
+            <h2 className="home-sketchbook-title">
+              {sketchbook.sectionHeading || "A Journal of Seeing"}
+            </h2>
+            {sketchbook.sectionIntro && (
+              <p className="home-sketchbook-intro">{sketchbook.sectionIntro}</p>
+            )}
+          </div>
+
+          <div className="home-sketchbook-canvas-wrap">
+            <Sketchbook bookSettings={sketchbook} pages={sketchbook.pages} />
+          </div>
+        </section>
+      )}
 
       {/* Action Navigation Options */}
       <div className="home-bottom-nav-row animate-enter-3" role="navigation" aria-label="Expedition Quick Links">

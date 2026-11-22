@@ -12,10 +12,12 @@ import {
   Sliders,
   FileText,
   Compass,
-  Inbox
+  Inbox,
+  BookOpen
 } from "lucide-react";
 import { useSiteContent } from "../context/SiteContentContext";
 import { defaultAssetConfig } from "../data/assets";
+import SketchbookAdmin from "../components/admin/SketchbookAdmin";
 
 export default function Admin() {
   const {
@@ -191,6 +193,14 @@ export default function Admin() {
           >
             <Inbox size={14} style={{ display: "inline", marginRight: "6px" }} />
             Enquiries ({enquiries.length})
+          </button>
+          <button
+            type="button"
+            className={`admin-tab-btn ${activeTab === "sketchbook" ? "active" : ""}`}
+            onClick={() => setActiveTab("sketchbook")}
+          >
+            <BookOpen size={14} style={{ display: "inline", marginRight: "6px" }} />
+            3D Sketchbook
           </button>
         </nav>
 
@@ -560,6 +570,11 @@ export default function Admin() {
               </div>
             )}
           </div>
+        )}
+
+        {/* TAB 4: 3D SKETCHBOOK FOLIO CMS */}
+        {activeTab === "sketchbook" && (
+          <SketchbookAdmin triggerNotice={triggerNotice} />
         )}
       </div>
     </div>
