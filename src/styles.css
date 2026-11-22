@@ -183,6 +183,43 @@ body.mobile-menu-active {
     display: none !important;
   }
 
+  .explore-desktop-only {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+  }
+  .explore-mobile-only {
+    display: none !important;
+  }
+
+  .art-exp-desktop-only {
+    width: 100%;
+    height: 100%;
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--grid-gap);
+  }
+  .art-exp-mobile-only {
+    display: none !important;
+  }
+
+  /* Hide mobile eyebrows, badges and mobile fast-actions on desktop */
+  .philosophy-eyebrow,
+  .contact-eyebrow,
+  .journey-header-eyebrow,
+  .home-hero-eyebrow,
+  .home-hero-cohort-pill,
+  .home-link-icon,
+  .art-exp-eyebrow,
+  .contact-mobile-fast-actions {
+    display: none !important;
+  }
+
   html, body {
     width: 100vw;
     height: 100vh;

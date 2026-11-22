@@ -246,14 +246,7 @@ export default function ExploreLadakh() {
                     </button>
                   ))}
 
-                  <div className="explore-map-legend-box">
-                    <div><span>□</span> Hanga Roa</div>
-                    <div><span>◎</span> Volcán</div>
-                    <div><span>—</span> Camino</div>
-                    <div><span>✚</span> Sitio arqueológico</div>
-                    <div><span>···</span> Límite Parque</div>
-                    <div><span>▲</span> Mauya</div>
-                  </div>
+
                 </div>
               </div>
             </div>
@@ -332,26 +325,19 @@ export default function ExploreLadakh() {
                     </button>
                   ))}
 
-                  <div className="explore-map-legend-box">
-                    <div><span>□</span> Hanga Roa</div>
-                    <div><span>◎</span> Volcán</div>
-                    <div><span>—</span> Camino</div>
-                    <div><span>✚</span> Sitio arqueológico</div>
-                    <div><span>···</span> Límite Parque</div>
-                    <div><span>▲</span> Mauya</div>
-                  </div>
                 </div>
               </div>
             </div>
 
+            {/* Center Column: Station Visual & Chronicler Info */}
             <div className="explore-detail-station-card">
               <SolidPlaceholder
-                slotId="exploreDetailCover"
-                className="explore-detail-image-slot"
+                slotId="exploreStationCover1"
+                className="explore-detail-thumb-slot"
               >
-                <div className="explore-detail-badge-row">
-                  <span className="explore-detail-coord-badge">ALT. {currentStation.altitude}</span>
-                  <span className="explore-detail-station-badge">{currentStation.region.toUpperCase()}</span>
+                <div className="explore-thumb-header-badge">
+                  <span>STATION FIELD STUDY</span>
+                  <span className="explore-overview-region-label">{currentStation.region}</span>
                 </div>
                 <div className="placeholder-footer-strip">
                   <span className="placeholder-footer-left">{currentStation.name}</span>
@@ -359,11 +345,21 @@ export default function ExploreLadakh() {
                 </div>
               </SolidPlaceholder>
 
-              <div className="explore-detail-info-block">
-                <h2 className="explore-detail-title">{currentStation.name}</h2>
-                <p className="explore-detail-quote">“{currentStation.quote}”</p>
-                <div className="explore-detail-exercise-box">
-                  <span className="explore-exercise-label">ATELIER EXERCISE</span>
+              <div className="explore-detail-info-pane">
+                <div>
+                  <h2 className="explore-detail-station-name">{currentStation.name}</h2>
+                  <p className="explore-detail-station-sub">{currentStation.subtitle}</p>
+                </div>
+
+                <div className="explore-chronicler-block">
+                  <div className="explore-chronicler-label">
+                    HISTORIC CHRONICLER · {currentStation.chronicler}
+                  </div>
+                  <p className="explore-chronicler-quote">“{currentStation.quote}”</p>
+                </div>
+
+                <div className="explore-exercise-block">
+                  <div className="explore-exercise-label">CREATIVE ATELIER EXERCISE</div>
                   <p className="explore-exercise-desc">{currentStation.exercise}</p>
                 </div>
               </div>

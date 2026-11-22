@@ -243,51 +243,19 @@ export default function ExpeditionDetail() {
                 </div>
               </div>
 
-              {/* Historic Chronicler Reference */}
-              <div className="expedition-disclosure-card">
-                <button
-                  type="button"
-                  className="expedition-disclosure-header"
-                  onClick={() => setShowChronicler(!showChronicler)}
-                  aria-expanded={showChronicler}
-                >
-                  <span className="expedition-disclosure-title">
-                    🏛 HISTORIC CHRONICLER REFERENCE
-                  </span>
-                  <span className="disclosure-toggle-icon" aria-hidden="true">
-                    {showChronicler ? "−" : "+"}
-                  </span>
-                </button>
-                {showChronicler && (
-                  <div className="expedition-disclosure-body">
-                    <p className="expedition-chronicler-quote">
-                      {travelerDisplayText}
-                    </p>
-                  </div>
-                )}
+              {/* Historic Chronicler Reference (Exact Original Editorial Layout) */}
+              <div className="expedition-chronicler-block">
+                <span className="expedition-chronicler-label">HISTORIC CHRONICLER REFERENCE</span>
+                <p className="expedition-chronicler-quote">
+                  {travelerDisplayText}
+                </p>
               </div>
 
               {/* Studio & Art Exercise */}
               {currentDay.artExercise && (
-                <div className="expedition-disclosure-card art-exercise-card">
-                  <button
-                    type="button"
-                    className="expedition-disclosure-header"
-                    onClick={() => setShowArtExercise(!showArtExercise)}
-                    aria-expanded={showArtExercise}
-                  >
-                    <span className="expedition-disclosure-title">
-                      🎨 STUDIO &amp; ART EXERCISE
-                    </span>
-                    <span className="disclosure-toggle-icon" aria-hidden="true">
-                      {showArtExercise ? "−" : "+"}
-                    </span>
-                  </button>
-                  {showArtExercise && (
-                    <div className="expedition-disclosure-body">
-                      <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
-                    </div>
-                  )}
+                <div className="expedition-day-art-box">
+                  <span className="expedition-day-art-label">STUDIO &amp; ART EXERCISE</span>
+                  <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
                 </div>
               )}
             </div>
