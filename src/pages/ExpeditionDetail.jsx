@@ -140,151 +140,168 @@ export default function ExpeditionDetail() {
       } ${isExiting ? "is-exiting" : ""}`}
     >
       {/* =========================================================================
-          DESKTOP VIEW (>= 1024px, Exact Original bc6a98a Layout)
+          DESKTOP VIEW (>= 1024px, Exact Approved Single-Viewport Side-by-Side Layout)
           ========================================================================= */}
       <div className="expedition-dossier-desktop-view expedition-dossier-desktop-only">
         {/* Expedition Header Strip */}
-      <div className="expedition-dossier-header">
-        <div className="expedition-dossier-title-group">
-          <h1 className="expedition-dossier-title">{expedition.title}</h1>
-          <span className="expedition-dossier-meta">
-            {expedition.length} · Max {expedition.maxAltitude} · Cohort 6-10
-          </span>
-        </div>
+        <div className="expedition-dossier-header">
+          <div className="expedition-dossier-title-group">
+            <div className="expedition-dossier-eyebrow">FIELD EXPEDITION DOSSIER</div>
+            <h1 className="expedition-dossier-title">{expedition.title}</h1>
+            <span className="expedition-dossier-meta">
+              {expedition.length} · Max {expedition.maxAltitude} · Cohort 6-10
+            </span>
+          </div>
 
-        <a
-          href={`/journey?view=detail&exp=${expedition.id}`}
-          onClick={handleBackToJourney}
-          className="expedition-back-btn"
-          aria-label="Back to Journeys Overview"
-        >
-          ← Back to Journeys Overview
-        </a>
-      </div>
-
-      {/* Main Single-Viewport 2-Column Grid */}
-      <div className={`expedition-dossier-grid ${isSwitchingDay ? "is-day-crossfading" : ""}`}>
-        {/* Left Column: Visual Day Card */}
-        <div className="expedition-dossier-left-card">
-          <SolidPlaceholder
-            slotId="journeyDetailCover"
-            className="expedition-dossier-image-slot"
+          <a
+            href={`/journey?view=detail&exp=${expedition.id}`}
+            onClick={handleBackToJourney}
+            className="expedition-back-btn"
+            aria-label="Back to Journeys Overview"
           >
-            <div className="expedition-dossier-badge-row">
-              <span className="expedition-dossier-day-badge">
-                DAY 0{currentDay.day || selectedDayIdx + 1}
-              </span>
-              <span className="expedition-dossier-length-chip">
-                {expedition.length}
-              </span>
-            </div>
-
-            <div className="placeholder-footer-strip">
-              <span className="placeholder-footer-left">
-                {currentDay.place}
-              </span>
-              <span className="placeholder-footer-right">
-                {currentDay.altitude}
-              </span>
-            </div>
-          </SolidPlaceholder>
+            ← Back to Journeys Overview
+          </a>
         </div>
 
-        {/* Right Column: Interactive Day Selector & Dossier Day Details */}
-        <div className="expedition-dossier-right-content">
-          {/* Day Selector Strip with Chevrons */}
-          <div className="expedition-day-nav-wrapper">
-            <div className="expedition-day-nav-header">
-              <span className="expedition-day-nav-label">
-                ITINERARY DAY SELECTION · DAY {selectedDayIdx + 1} OF {days.length}
-              </span>
-              <div className="expedition-day-arrows">
-                <button
-                  type="button"
-                  className="expedition-nav-arrow-btn"
-                  onClick={() => handleSelectDay(Math.max(0, selectedDayIdx - 1))}
-                  disabled={selectedDayIdx === 0}
-                  aria-label="Previous Day"
-                  title="Previous Day"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  className="expedition-nav-arrow-btn"
-                  onClick={() => handleSelectDay(Math.min(days.length - 1, selectedDayIdx + 1))}
-                  disabled={selectedDayIdx === days.length - 1}
-                  aria-label="Next Day"
-                  title="Next Day"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-            <div
-              ref={navStripRef}
-              className="expedition-days-nav-strip"
-              role="tablist"
-              aria-label="Itinerary Days"
-            >
-              {days.map((d, idx) => (
-                <button
-                  key={idx}
-                  ref={(el) => (pillRefs.current[idx] = el)}
-                  type="button"
-                  className={`expedition-day-pill ${idx === selectedDayIdx ? "active" : ""}`}
-                  onClick={() => handleSelectDay(idx)}
-                  role="tab"
-                  aria-selected={idx === selectedDayIdx}
-                >
-                  Day {d.day || idx + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Day Details Pane */}
-          <div className="expedition-day-details-pane">
-            <div>
-              <h2 className="expedition-day-title">
-                Day {currentDay.day || selectedDayIdx + 1}: {currentDay.place}
-              </h2>
-              <div className="expedition-day-meta-row">
-                <span>Altitude: {currentDay.altitude}</span>
-                {currentDay.region && <span>Region: {currentDay.region}</span>}
-                {currentDay.kind && <span>Focus: {currentDay.kind}</span>}
-              </div>
-            </div>
-
-            {currentDay.travelerLink && currentDay.travelerLink !== "-" && (
-              <div className="expedition-chronicler-block">
-                <span className="expedition-chronicler-label">
-                  HISTORIC CHRONICLER REFERENCE
+        {/* Main 2-Column Grid */}
+        <div className={`expedition-dossier-grid ${isSwitchingDay ? "is-day-crossfading" : ""}`}>
+          {/* Left Column: Visual Day Card */}
+          <div className="expedition-dossier-left-card">
+            <SolidPlaceholder slotId="journeyDetailCover" className="expedition-dossier-image-slot">
+              <div className="expedition-dossier-badge-row">
+                <span className="expedition-dossier-day-badge">
+                  DAY 0{currentDay.day || selectedDayIdx + 1}
                 </span>
-                <p className="expedition-chronicler-quote">
-                  Following the traces of {currentDay.travelerLink}.
-                </p>
+                <span className="expedition-dossier-length-chip">{expedition.length}</span>
               </div>
-            )}
 
-            <div className="expedition-day-art-box">
-              <span className="expedition-day-art-label">STUDIO &amp; ART EXERCISE</span>
-              <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
-            </div>
+              <div className="placeholder-footer-strip">
+                <span className="placeholder-footer-left">{currentDay.place}</span>
+                <span className="placeholder-footer-right">{currentDay.altitude}</span>
+              </div>
+            </SolidPlaceholder>
           </div>
 
-          {/* Action Row */}
-          <div className="expedition-enquire-btn-row">
-            <Link
-              to="/contact"
-              className="journey-dossier-btn"
-            >
-              REQUEST FULL DOSSIER &amp; RESERVE PASS &nbsp;↗
-            </Link>
+          {/* Right Column: Interactive Day Selector & Dossier Day Details */}
+          <div className="expedition-dossier-right-content">
+            {/* Day Selector Strip with Chevrons */}
+            <div className="expedition-day-nav-wrapper">
+              <div className="expedition-day-nav-header">
+                <span className="expedition-day-nav-label">
+                  ITINERARY DAY SELECTION · DAY {selectedDayIdx + 1} OF {days.length}
+                </span>
+                <div className="expedition-day-arrows">
+                  <button
+                    type="button"
+                    className="expedition-nav-arrow-btn"
+                    onClick={() => handleSelectDay(Math.max(0, selectedDayIdx - 1))}
+                    disabled={selectedDayIdx === 0}
+                    aria-label="Previous Day"
+                    title="Previous Day"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="expedition-nav-arrow-btn"
+                    onClick={() => handleSelectDay(Math.min(days.length - 1, selectedDayIdx + 1))}
+                    disabled={selectedDayIdx === days.length - 1}
+                    aria-label="Next Day"
+                    title="Next Day"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+              <div ref={navStripRef} className="expedition-days-nav-strip scroll-edge-fade" role="tablist" aria-label="Itinerary Days">
+                {days.map((d, idx) => (
+                  <button
+                    key={idx}
+                    ref={(el) => (pillRefs.current[idx] = el)}
+                    type="button"
+                    className={`expedition-day-pill ${idx === selectedDayIdx ? "active" : ""}`}
+                    onClick={() => handleSelectDay(idx)}
+                    role="tab"
+                    aria-selected={idx === selectedDayIdx}
+                  >
+                    Day {d.day || idx + 1}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Day Details Pane */}
+            <div className="expedition-day-details-pane">
+              <div className="expedition-day-intro-block">
+                <h2 className="expedition-day-title">
+                  Day {currentDay.day || selectedDayIdx + 1}: {currentDay.place}
+                </h2>
+                <div className="expedition-day-meta-row">
+                  <span className="expedition-meta-chip">Elevation: {currentDay.altitude}</span>
+                  {currentDay.region && <span className="expedition-meta-chip">Region: {currentDay.region}</span>}
+                  {currentDay.kind && <span className="expedition-meta-chip">Focus: {currentDay.kind}</span>}
+                </div>
+              </div>
+
+              {/* Historic Chronicler Reference */}
+              <div className="expedition-disclosure-card">
+                <button
+                  type="button"
+                  className="expedition-disclosure-header"
+                  onClick={() => setShowChronicler(!showChronicler)}
+                  aria-expanded={showChronicler}
+                >
+                  <span className="expedition-disclosure-title">
+                    🏛 HISTORIC CHRONICLER REFERENCE
+                  </span>
+                  <span className="disclosure-toggle-icon" aria-hidden="true">
+                    {showChronicler ? "−" : "+"}
+                  </span>
+                </button>
+                {showChronicler && (
+                  <div className="expedition-disclosure-body">
+                    <p className="expedition-chronicler-quote">
+                      {travelerDisplayText}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Studio & Art Exercise */}
+              {currentDay.artExercise && (
+                <div className="expedition-disclosure-card art-exercise-card">
+                  <button
+                    type="button"
+                    className="expedition-disclosure-header"
+                    onClick={() => setShowArtExercise(!showArtExercise)}
+                    aria-expanded={showArtExercise}
+                  >
+                    <span className="expedition-disclosure-title">
+                      🎨 STUDIO &amp; ART EXERCISE
+                    </span>
+                    <span className="disclosure-toggle-icon" aria-hidden="true">
+                      {showArtExercise ? "−" : "+"}
+                    </span>
+                  </button>
+                  {showArtExercise && (
+                    <div className="expedition-disclosure-body">
+                      <p className="expedition-day-art-desc">{currentDay.artExercise}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Row */}
+            <div className="expedition-enquire-btn-row">
+              <Link to="/contact" className="journey-dossier-btn">
+                <span>REQUEST FULL DOSSIER &amp; RESERVE PASS</span>
+                <span className="btn-icon" aria-hidden="true">↗</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* =========================================================================
           MOBILE VIEW (< 1024px, Dedicated Apple-Inspired Vertical Itinerary Flow)
@@ -516,7 +533,6 @@ export default function ExpeditionDetail() {
           </span>
         </div>
       </div>
-
     </div>
   );
 }
