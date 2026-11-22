@@ -22,9 +22,12 @@ export default function SiteLayout({ children }) {
   const [prevChildren, setPrevChildren] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Close mobile drawer on route change
+  // Close mobile drawer and reset window horizontal scroll on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+    }
   }, [location.pathname]);
 
   // Lock body scroll when mobile menu is open

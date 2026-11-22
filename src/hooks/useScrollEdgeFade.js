@@ -47,24 +47,29 @@ export function useScrollEdgeFade({
       const el = containerRef.current;
       if (!el) return;
 
+      // Pure local container scrolling - NEVER touch ancestor containers or window.
+      // If there is no overflow, ensure scrollLeft is 0 and exit.
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      if (maxScroll <= 2) {
+        if (el.scrollLeft !== 0) el.scrollLeft = 0;
+        return;
+      }
+
       const activeEl = el.querySelector(activeSelector);
       if (!activeEl) return;
 
-      try {
-        activeEl.scrollIntoView({
-          behavior,
-          inline: "center",
-          block: "nearest",
-        });
-      } catch (e) {
-        // Fallback manual calculation if scrollIntoView with options is not supported
-        const elRect = el.getBoundingClientRect();
-        const activeRect = activeEl.getBoundingClientRect();
-        const activeCenter = activeRect.left + activeRect.width / 2;
-        const containerCenter = elRect.left + elRect.width / 2;
-        const delta = activeCenter - containerCenter;
-        const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
-        el.scrollLeft = Math.max(0, Math.min(el.scrollLeft + delta, maxScroll));
+      // Calculate the exact target scroll position within this local container ONLY
+      const elRect = el.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+      const activeCenter = activeRect.left + activeRect.width / 2;
+      const containerCenter = elRect.left + elRect.width / 2;
+      const delta = activeCenter - containerCenter;
+      const targetScrollLeft = Math.max(0, Math.min(el.scrollLeft + delta, maxScroll));
+
+      if (typeof el.scrollTo === "function") {
+        el.scrollTo({ left: targetScrollLeft, behavior });
+      } else {
+        el.scrollLeft = targetScrollLeft;
       }
     },
     [containerRef, activeSelector]

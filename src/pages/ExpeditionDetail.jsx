@@ -146,7 +146,6 @@ export default function ExpeditionDetail() {
         {/* Expedition Header Strip */}
         <div className="expedition-dossier-header">
           <div className="expedition-dossier-title-group">
-            <div className="expedition-dossier-eyebrow">FIELD EXPEDITION DOSSIER</div>
             <h1 className="expedition-dossier-title">{expedition.title}</h1>
             <span className="expedition-dossier-meta">
               {expedition.length} · Max {expedition.maxAltitude} · Cohort 6-10
