@@ -106,7 +106,7 @@ export default function Philosophy() {
     <div className="philosophy-container">
       {/* Left Column: Heading and Description */}
       <div className="philosophy-left-col">
-        <div className="philosophy-eyebrow">THE ATELIER THESIS</div>
+        <div className="philosophy-eyebrow philosophy-mobile-only">THE ATELIER THESIS</div>
         <h1 className="philosophy-heading animate-enter-1">
           {content.philosophyHeadline || "Art is the Antidote for Life"}
         </h1>
@@ -119,9 +119,29 @@ export default function Philosophy() {
       {/* Right Column: Enlarged White Card with Interactive Chapters */}
       <div className="philosophy-right-col">
         <div className="philosophy-white-card animate-enter-3">
-          {/* Top Chapter Tabs Strip with Dynamic Edge Fade */}
+          {/* Desktop Top Chapter Tabs Strip (Exact Original bc6a98a) */}
+          <div className="philosophy-tabs-strip philosophy-desktop-only" role="tablist" aria-label="Philosophy Chapters">
+            {PHILOSOPHY_CHAPTERS.map((ch, idx) => (
+              <button
+                key={ch.id}
+                type="button"
+                className={`philosophy-tab-btn ${idx === activeChapterIndex ? "active" : ""}`}
+                onClick={() => {
+                  setActiveChapterIndex(idx);
+                  setIsDossierOpen(false);
+                }}
+                role="tab"
+                aria-selected={idx === activeChapterIndex}
+              >
+                <span className="tab-num">{ch.number}</span>
+                <span>{ch.tabLabel}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile Top Chapter Tabs Strip with Dynamic Edge Fade */}
           <HorizontalScrollStrip
-            className="philosophy-tabs-strip"
+            className="philosophy-tabs-strip philosophy-mobile-only"
             role="tablist"
             aria-label="Philosophy Chapters"
             activeKey={activeChapterIndex}

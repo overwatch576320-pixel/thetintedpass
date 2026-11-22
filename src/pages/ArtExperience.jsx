@@ -83,7 +83,6 @@ export default function ArtExperience() {
           ========================================================================= */}
       <div className="art-exp-desktop-only">
         <div className="art-exp-left-col">
-          <div className="art-exp-eyebrow">STUDIO MENTORSHIP &amp; PRACTICE</div>
           <h1 className="art-exp-heading animate-enter-1">
             {content.artHeading || "The Art of Seeing: Himalayan Studio Practice"}
           </h1>
@@ -134,8 +133,7 @@ export default function ArtExperience() {
 
               <div className="art-exp-action-row">
                 <Link to="/contact" className="journey-dossier-btn">
-                  <span>RESERVE ATELIER PASS</span>
-                  <span className="btn-icon" aria-hidden="true">↗</span>
+                  RESERVE ATELIER PASS &nbsp;↗
                 </Link>
               </div>
             </div>

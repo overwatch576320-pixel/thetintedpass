@@ -3,7 +3,7 @@ import { useSiteContent } from "../context/SiteContentContext";
 import { CheckCircle2, Mail, Phone, MapPin, Compass } from "lucide-react";
 import { countries } from "../data/countries";
 
-const WhatsAppIcon = ({ size = 16, className = "" }) => (
+const WhatsAppIcon = ({ size = 15, className = "" }) => (
   <svg
     width={size}
     height={size}
@@ -60,7 +60,7 @@ export default function Contact() {
     <div className="contact-container">
       {/* Left Column: Heading, Subhead & Studio Coordinates */}
       <div className="contact-left-col">
-        <div className="contact-eyebrow">ATELIER LIAISON &amp; RESERVATIONS</div>
+        <div className="contact-eyebrow contact-mobile-only">ATELIER LIAISON &amp; RESERVATIONS</div>
         <h1 className="contact-title animate-enter-1">
           {content.contactHeading || "Begin Your Journey"}
         </h1>
@@ -70,7 +70,7 @@ export default function Contact() {
         </p>
 
         {/* Mobile Fast Action Contact Bar */}
-        <div className="contact-mobile-fast-actions">
+        <div className="contact-mobile-fast-actions contact-mobile-only">
           <a
             href={WHATSAPP_LINK}
             target="_blank"
@@ -96,8 +96,51 @@ export default function Contact() {
           </a>
         </div>
 
-        {/* Coordinates List (Desktop and Mobile) */}
-        <div className="contact-coordinates-list animate-enter-3">
+        {/* Desktop Coordinates List (Exact Original bc6a98a) */}
+        <div className="contact-coordinates-list animate-enter-3 contact-desktop-only">
+          <div className="contact-coord-item">
+            <span className="contact-coord-label">HERITAGE ATELIER PRECINCT</span>
+            <span className="contact-coord-value">
+              {content.contactAddress || "Old Town Heritage Precinct, Leh, Ladakh 194101"}
+            </span>
+          </div>
+
+          <div className="contact-coord-item">
+            <span className="contact-coord-label">STUDIO ENQUIRIES &amp; DISPATCH</span>
+            <span className="contact-coord-value">
+              {content.contactEmail || "hello@thetintedpass.com"}
+            </span>
+          </div>
+
+          <div className="contact-coord-item">
+            <span className="contact-coord-label">STUDIO DIRECT &amp; WHATSAPP</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "2px" }}>
+              <span className="contact-coord-value">
+                {content.contactPhone || "+91 98765 43210"}
+              </span>
+              <a
+                href={WHATSAPP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="contact-coord-wa-link"
+                title="Direct chat on WhatsApp"
+              >
+                <WhatsAppIcon size={12} />
+                <span>Chat</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="contact-coord-item">
+            <span className="contact-coord-label">CARTOGRAPHIC COORDINATES</span>
+            <span className="contact-coord-value" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }}>
+              34°09′09″ N, 77°34′30″ E · 3,500M - 5,360M
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile Coordinates List */}
+        <div className="contact-coordinates-list animate-enter-3 contact-mobile-only">
           <div className="contact-coord-item">
             <span className="contact-coord-label">HERITAGE ATELIER PRECINCT</span>
             <span className="contact-coord-value">
@@ -158,18 +201,18 @@ export default function Contact() {
         </div>
 
         {submitted ? (
-          <div className="contact-success-state" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "24px 16px" }}>
-            <CheckCircle2 size={46} color="#10b981" style={{ marginBottom: "14px" }} />
-            <h3 style={{ fontFamily: "var(--font-sans)", fontSize: "20px", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>
+          <div className="contact-success-state" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px" }}>
+            <CheckCircle2 size={42} color="#10b981" style={{ marginBottom: "12px" }} />
+            <h3 style={{ fontFamily: "var(--font-sans)", fontSize: "18px", color: "#0f172a", marginBottom: "8px" }}>
               Enquiry Transmitted to the Atelier
             </h3>
-            <p style={{ fontFamily: "var(--font-sans)", fontSize: "13px", color: "#475569", maxWidth: "380px", lineHeight: 1.55 }}>
-              Thank you, {formData.name}. Our studio director will review your details and reply shortly with private cohort dossier and availability.
+            <p style={{ fontFamily: "var(--font-sans)", fontSize: "12px", color: "#475569", maxWidth: "380px", lineHeight: 1.5 }}>
+              Thank you, {formData.name}. Our studio director will review your details and reply shortly with private cohort information.
             </p>
             <button
               type="button"
               className="journey-dossier-btn"
-              style={{ marginTop: "18px" }}
+              style={{ marginTop: "16px" }}
               onClick={() => {
                 setSubmitted(false);
                 setFormData({ name: "", email: "", phone: "", country: "", message: "" });

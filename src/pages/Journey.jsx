@@ -104,27 +104,27 @@ export default function Journey() {
   }, [currentExp?.id]);
 
   // Handle clicking a card in the overview -> smooth transition into detail view
-  const handleSelectCard = (exp) => {
+  const handleSelectExpedition = (expId) => {
     if (transitionState !== "idle") return;
-    setClickedCardId(exp.id);
+    setClickedCardId(expId);
     setTransitionState("exiting-overview");
 
     setTimeout(() => {
-      setSelectedExpId(exp.id);
+      setSelectedExpId(expId);
       setViewMode("detail");
-      setSearchParams({ view: "detail", exp: exp.id });
+      setSearchParams({ view: "detail", exp: expId });
       setTransitionState("entering-detail");
-
-      // Scroll smoothly to top of detail view
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
 
       setTimeout(() => {
         setTransitionState("idle");
         setClickedCardId(null);
-      }, 350);
-    }, 180);
+      }, 420);
+    }, 220);
+  };
+
+  // Mobile card select handler
+  const handleSelectCard = (exp) => {
+    handleSelectExpedition(exp.id);
   };
 
   // Handle opening full dossier page -> smooth transition
@@ -134,10 +134,10 @@ export default function Journey() {
     setTransitionState("exiting-detail");
     setTimeout(() => {
       navigate(`/journey/${slug}`);
-    }, 180);
+    }, 200);
   };
 
-  // Handle back to overview button -> smooth transition back to cards
+  // Handle back to overview button -> smooth transition back to 4 cards
   const handleBackToOverview = () => {
     if (transitionState !== "idle") return;
     setTransitionState("exiting-detail");
@@ -147,14 +147,10 @@ export default function Journey() {
       setSearchParams({});
       setTransitionState("entering-overview");
 
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
       setTimeout(() => {
         setTransitionState("idle");
-      }, 300);
-    }, 180);
+      }, 360);
+    }, 200);
   };
 
   // Handle switching between expeditions inside detail view -> soft crossfade
@@ -167,7 +163,7 @@ export default function Journey() {
       setSelectedStationIdx(null);
       setTimeout(() => {
         setIsCrossfadingExp(false);
-      }, 60);
+      }, 160);
     }, 140);
   };
 
@@ -188,12 +184,305 @@ export default function Journey() {
   return (
     <div className={`journey-container view-${viewMode} transition-${transitionState}`}>
       {/* =========================================================================
-          VIEW 1: EXPEDITION OVERVIEW MODE
+          DESKTOP VIEW (>= 1024px, Exact Original bc6a98a Layout & Proportions)
           ========================================================================= */}
+      <div className="journey-desktop-only">
+        <div className="journey-header-area">
+        <div className="journey-header-text">
+          <h1 className="journey-heading animate-enter-1">
+            {content.journeyHeading || "Four Trans-Himalayan Journeys-"}
+          </h1>
+          <p className="journey-intro animate-enter-2">
+            {content.journeyIntro ||
+              "Carefully paced itineraries with authentic monastic access, low-altitude village stays, and dedicated daily creative hours. Capped at 6 to 10 participants per cohort."}
+          </p>
+        </div>
+
+        {viewMode === "detail" && (
+          <button
+            type="button"
+            className="journey-toggle-btn animate-enter-2"
+            onClick={handleBackToOverview}
+            aria-label="View all journeys overview"
+          >
+            ← View All 4 Journeys
+          </button>
+        )}
+      </div>
+
+      {/* Interactive Filter Pills Strip (Features) */}
       {viewMode === "overview" && (
-        <>
-          {/* Header Introduction Area */}
-          <div className="journey-header-area">
+        <div
+          className={`journey-filters-row animate-enter-3 ${transitionState === "exiting-overview" ? "is-exiting" : ""}`}
+          role="tablist"
+          aria-label="Filter Expeditions"
+        >
+          <button
+            type="button"
+            className={`journey-filter-pill ${filterDuration === "all" ? "active" : ""}`}
+            onClick={() => setFilterDuration("all")}
+          >
+            All Expeditions (4)
+          </button>
+          <button
+            type="button"
+            className={`journey-filter-pill ${filterDuration === "10" ? "active" : ""}`}
+            onClick={() => setFilterDuration("10")}
+          >
+            10 Days · Essential
+          </button>
+          <button
+            type="button"
+            className={`journey-filter-pill ${filterDuration === "13" ? "active" : ""}`}
+            onClick={() => setFilterDuration("13")}
+          >
+            13 Days · Heartland
+          </button>
+          <button
+            type="button"
+            className={`journey-filter-pill ${filterDuration === "14" ? "active" : ""}`}
+            onClick={() => setFilterDuration("14")}
+          >
+            14 Days · High Lakes
+          </button>
+          <button
+            type="button"
+            className={`journey-filter-pill ${filterDuration === "15" ? "active" : ""}`}
+            onClick={() => setFilterDuration("15")}
+          >
+            15 Days · Grand Traverse
+          </button>
+        </div>
+      )}
+
+      {/* VIEW 1: Four-Expedition Card Layout (Sharper Corners + Mid-Lower Placement) */}
+      {viewMode === "overview" && (
+        <div
+          className={`journey-4cards-grid ${
+            transitionState === "exiting-overview"
+              ? "is-exiting"
+              : transitionState === "entering-overview"
+              ? "is-entering"
+              : ""
+          }`}
+          role="region"
+          aria-label="Expedition Cards Overview"
+        >
+          {expeditions.slice(0, 4).map((exp, idx) => {
+            const expNum = `Expedition 0${idx + 1}`;
+            const slotId = `journeyExp${idx + 1}`;
+            const isMatch =
+              filterDuration === "all" ||
+              (filterDuration === "10" && exp.length?.includes("10")) ||
+              (filterDuration === "13" && exp.length?.includes("13")) ||
+              (filterDuration === "14" && exp.length?.includes("14")) ||
+              (filterDuration === "15" && exp.length?.includes("15"));
+
+            const isClicked = clickedCardId === exp.id;
+
+            return (
+              <div
+                key={exp.id}
+                className={`journey-overview-card ${isMatch ? "focused" : "dimmed"} ${
+                  isClicked ? "clicked-active" : ""
+                }`}
+                onClick={() => handleSelectCard(exp)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") handleSelectCard(exp);
+                }}
+                aria-label={`Select ${expNum} - ${exp.title}`}
+              >
+                <SolidPlaceholder
+                  slotId={slotId}
+                  className="journey-card-slot"
+                >
+                  <div className="journey-card-top-bar">
+                    <span className="journey-card-exp-number">{expNum}</span>
+                    <span className="journey-card-length-badge">{exp.length || "10 Days"}</span>
+                  </div>
+
+                  <div className="journey-card-bottom-info">
+                    <span className="journey-card-alt-badge">{exp.maxAltitude || "4,250 m"}</span>
+                    <h3 className="journey-card-title">{exp.title}</h3>
+                    <span className="journey-card-region-summary">
+                      {(exp.regions || []).slice(0, 3).join(" · ")}
+                    </span>
+                    <span className="journey-card-inspect-cta">Inspect Route &amp; Dossier →</span>
+                  </div>
+                </SolidPlaceholder>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* VIEW 2: Selected Expedition Layout (Smooth Detail Inspector with Sharper Corners) */}
+      {viewMode === "detail" && currentExp && (
+        <div
+          className={`journey-detail-view-layout ${
+            transitionState === "entering-detail"
+              ? "is-entering"
+              : transitionState === "exiting-detail"
+              ? "is-exiting"
+              : ""
+          }`}
+        >
+          <div className={`journey-detail-main-row ${isCrossfadingExp ? "is-crossfading" : ""}`}>
+            {/* White Panel on Left with Sharper Corners */}
+            <div className="journey-detail-white-panel">
+              {/* Left Solid Visual Slot */}
+              <SolidPlaceholder
+                slotId="journeyDetailCover"
+                className="journey-detail-cover-slot"
+              >
+                <div className="journey-detail-cover-top-bar">
+                  <span className="journey-detail-alt-tag">
+                    {currentExp.maxAltitude ? `Max ${currentExp.maxAltitude}` : "Max 4,250 m (Pangong Tso)"}
+                  </span>
+                  <span className="journey-detail-length-tag">
+                    {currentExp.length ? `${currentExp.length} Itinerary` : "13 Days Itinerary"}
+                  </span>
+                </div>
+
+                <div className="journey-detail-cover-bottom-bar">
+                  <span className="journey-detail-slot-label">
+                    {expNumberLabel} · {currentExp.title}
+                  </span>
+                </div>
+              </SolidPlaceholder>
+
+              {/* Transit Stations Column */}
+              <div className="journey-detail-stations-col">
+                <div>
+                  <h3 className="journey-stations-heading">TRANSIT STATIONS</h3>
+                  <ul className="journey-station-list">
+                    {(currentExp.regions || ["Leh", "Sham Valley", "Nubra Valley", "Pangong Tso"]).map((reg, i) => {
+                      const alt = STATION_ALTITUDES[reg] || "3,200 m";
+                      const displayReg = reg === "Sham Valley (Alchi, Likir)" ? "Sham Valley (Alchi)" : reg;
+                      return (
+                        <li key={i} className="journey-station-item">
+                          <span className="journey-station-name">{displayReg}</span>
+                          <span className="journey-station-alt">{alt}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Animated Route Illustration SVG */}
+                <div className="journey-route-trail-box">
+                  <svg
+                    className="journey-route-trail-svg"
+                    viewBox="0 0 160 70"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-label="Route waypoints"
+                  >
+                    <path
+                      d={currentRoute.path}
+                      stroke="#f15a24"
+                      strokeWidth="2.5"
+                      className="animated-route-path"
+                    />
+                    {currentRoute.waypoints.map((pt, i) => (
+                      <g key={i} className="route-waypoint-group">
+                        <circle cx={pt.x} cy={pt.y} r="5" fill="#f15a24" fillOpacity="0.25" className="waypoint-pulse" />
+                        <circle cx={pt.x} cy={pt.y} r="2.8" fill="#f15a24" />
+                        <text
+                          x={pt.x}
+                          y={pt.y - 7}
+                          textAnchor="middle"
+                          fill="#0f172a"
+                          fontSize="7"
+                          fontFamily="var(--font-mono)"
+                          fontWeight="700"
+                        >
+                          {pt.label}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Titles, Premise & Dossier Button */}
+            <div className="journey-detail-right-col">
+              <div className="journey-detail-badge-row">
+                <span className="journey-detail-subhead">{expNumberLabel}</span>
+                <span className="journey-detail-duration-tag">
+                  {currentExp.length || "13 Days"} · {currentExp.nights || "12 Nights"}
+                </span>
+              </div>
+
+              <h2 className="journey-detail-title">{currentExp.title}</h2>
+
+              <div className="journey-premise-block">
+                <h4 className="journey-premise-heading">ARTISTIC PREMISE &amp; HIGHLIGHTS</h4>
+                <p className="journey-premise-text">
+                  {currentExp.focus || "Monasteries, Silk Road history, sand dunes and the high lake"}
+                </p>
+                <p className="journey-premise-quote">
+                  “{currentExp.highlight || "Focused on the Ladakh heartland with no Changthang leg, allowing more breathing room and village immersion."}”
+                </p>
+              </div>
+
+              <div className="journey-detail-action-row">
+                <a
+                  href={`/journey/${currentExp.slug || "heartland"}`}
+                  onClick={(e) => handleOpenDossier(e, currentExp.slug || "heartland")}
+                  className="journey-dossier-btn"
+                  id="journey-dossier-cta-btn"
+                >
+                  EXAMINE FULL DAY-BY-DAY DOSSIER &nbsp;↗
+                </a>
+                <span className="journey-detail-cohort-tag">Cohort of 6–10 artists</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Row: 4 Mini Expedition Selectors (Stable Order, Active Highlight) */}
+          <div className="journey-detail-bottom-row" role="tablist" aria-label="Expedition Switcher">
+            <span className="journey-switcher-label">EXPEDITIONS:</span>
+            {expeditions.slice(0, 4).map((exp, idx) => {
+              const expNum = `Expedition 0${idx + 1}`;
+              const isActive = exp.id === currentExp.id;
+
+              return (
+                <button
+                  key={exp.id}
+                  type="button"
+                  className={`journey-mini-card ${isActive ? "active" : ""}`}
+                  onClick={() => handleSwitchExpedition(exp.id)}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={`Switch to ${expNum} - ${exp.title}`}
+                >
+                  <div className="journey-mini-card-slot">
+                    <div className="journey-mini-card-top">
+                      <span className="journey-mini-exp-label">{expNum}</span>
+                      <span className="journey-mini-length-label">{exp.length}</span>
+                    </div>
+                    <span className="journey-mini-title-label">{exp.title}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    
+      </div>
+
+      {/* =========================================================================
+          MOBILE VIEW (<= 1023px, Dedicated Mobile-First Design System)
+          ========================================================================= */}
+      <div className="journey-mobile-only">
+        {viewMode === "overview" && (
+          <>
+            <div className="journey-header-area">
             <div className="journey-header-text">
               <div className="journey-header-eyebrow animate-enter-1">
                 FOUR TRANS-HIMALAYAN JOURNEYS
@@ -261,67 +550,7 @@ export default function Journey() {
               15 Days
             </button>
           </HorizontalScrollStrip>
-
-          {/* DESKTOP 4-CARDS GRID (>= 1024px, Exact Approved Single-Viewport Layout) */}
-          <div
-            className={`journey-4cards-grid journey-desktop-only ${
-              transitionState === "exiting-overview"
-                ? "is-exiting"
-                : transitionState === "entering-overview"
-                ? "is-entering"
-                : ""
-            }`}
-            role="region"
-            aria-label="Expedition Cards Overview"
-          >
-            {expeditions.slice(0, 4).map((exp, idx) => {
-              const expNum = `Expedition 0${idx + 1}`;
-              const slotId = `journeyExp${idx + 1}`;
-              const isMatch =
-                filterDuration === "all" ||
-                (filterDuration === "10" && exp.length?.includes("10")) ||
-                (filterDuration === "13" && exp.length?.includes("13")) ||
-                (filterDuration === "14" && exp.length?.includes("14")) ||
-                (filterDuration === "15" && exp.length?.includes("15"));
-
-              const isClicked = clickedCardId === exp.id;
-
-              return (
-                <div
-                  key={exp.id}
-                  className={`journey-overview-card ${isMatch ? "focused" : "dimmed"} ${
-                    isClicked ? "clicked-active" : ""
-                  }`}
-                  onClick={() => handleSelectCard(exp)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") handleSelectCard(exp);
-                  }}
-                  aria-label={`Select ${expNum} - ${exp.title}`}
-                >
-                  <SolidPlaceholder slotId={slotId} className="journey-card-slot">
-                    <div className="journey-card-top-bar">
-                      <span className="journey-card-exp-number">{expNum}</span>
-                      <span className="journey-card-length-badge">{exp.length || "10 Days"}</span>
-                    </div>
-
-                    <div className="journey-card-bottom-info">
-                      <span className="journey-card-alt-badge">{exp.maxAltitude || "4,250 m"}</span>
-                      <h3 className="journey-card-title">{exp.title}</h3>
-                      <span className="journey-card-region-summary">
-                        {(exp.regions || []).slice(0, 3).join(" · ")}
-                      </span>
-                      <span className="journey-card-inspect-cta">Inspect Route &amp; Dossier →</span>
-                    </div>
-                  </SolidPlaceholder>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* MOBILE APPLE-INSPIRED SINGLE-COLUMN LIST (< 1024px) */}
-          <div
+            <div
             className={`journey-mobile-cards-list journey-mobile-only ${
               transitionState === "exiting-overview" ? "is-exiting" : ""
             }`}
@@ -385,181 +614,11 @@ export default function Journey() {
               );
             })}
           </div>
-        </>
-      )}
+        
+          </>
+        )}
 
-      {/* =========================================================================
-          VIEW 2: EXPEDITION DETAIL MODE
-          ========================================================================= */}
-      {viewMode === "detail" && currentExp && (
-        <>
-          {/* DESKTOP DETAIL VIEW (>= 1024px, Exact Approved Single-Viewport Layout) */}
-          <div
-            className={`journey-detail-view-layout journey-desktop-only ${
-              transitionState === "entering-detail"
-                ? "is-entering"
-                : transitionState === "exiting-detail"
-                ? "is-exiting"
-                : ""
-            }`}
-          >
-            {/* Header with Back Toggle */}
-            <div className="journey-header-area">
-              <div className="journey-header-text">
-                <h1 className="journey-heading animate-enter-1">
-                  {content.journeyHeading ? content.journeyHeading.replace(/-$/, "") : "Four Trans-Himalayan Journeys"}
-                </h1>
-                <p className="journey-intro animate-enter-2">
-                  {content.journeyIntro ||
-                    "Carefully paced itineraries with authentic monastic access, low-altitude village stays, and dedicated daily creative hours. Capped at 6 to 10 participants per cohort."}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="journey-toggle-btn animate-enter-2"
-                onClick={handleBackToOverview}
-                aria-label="View all journeys overview"
-              >
-                ← View All 4 Journeys
-              </button>
-            </div>
-
-            {/* 2-Column Inspector Row */}
-            <div className={`journey-detail-main-row ${isCrossfadingExp ? "is-crossfading" : ""}`}>
-              {/* White Panel on Left */}
-              <div className="journey-detail-white-panel">
-                <SolidPlaceholder slotId="journeyDetailCover" className="journey-detail-cover-slot">
-                  <div className="journey-detail-cover-top-bar">
-                    <span className="journey-detail-alt-tag">
-                      {currentExp.maxAltitude ? `Max ${currentExp.maxAltitude}` : "Max 4,250 m (Pangong Tso)"}
-                    </span>
-                    <span className="journey-detail-length-tag">
-                      {currentExp.length ? `${currentExp.length} Itinerary` : "13 Days Itinerary"}
-                    </span>
-                  </div>
-
-                  <div className="journey-detail-cover-bottom-bar">
-                    <span className="journey-detail-slot-label">
-                      {expNumberLabel} · {currentExp.title}
-                    </span>
-                  </div>
-                </SolidPlaceholder>
-
-                <div className="journey-detail-stations-col">
-                  <div>
-                    <h3 className="journey-stations-heading">TRANSIT STATIONS</h3>
-                    <ul className="journey-station-list">
-                      {(currentExp.regions || ["Leh", "Sham Valley", "Nubra Valley", "Pangong Tso"]).map((reg, i) => {
-                        const alt = STATION_ALTITUDES[reg] || "3,200 m";
-                        const displayReg = reg === "Sham Valley (Alchi, Likir)" ? "Sham Valley (Alchi)" : reg;
-                        return (
-                          <li key={i} className="journey-station-item">
-                            <span className="journey-station-name">{displayReg}</span>
-                            <span className="journey-station-alt">{alt}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-
-                  <div className="journey-route-trail-box">
-                    <svg
-                      className="journey-route-trail-svg"
-                      viewBox="0 0 160 70"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-label="Route waypoints"
-                    >
-                      <path d={currentRoute.path} stroke="#f15a24" strokeWidth="2.5" className="animated-route-path" />
-                      {currentRoute.waypoints.map((pt, i) => (
-                        <g key={i} className="route-waypoint-group">
-                          <circle cx={pt.x} cy={pt.y} r="5" fill="#f15a24" fillOpacity="0.25" className="waypoint-pulse" />
-                          <circle cx={pt.x} cy={pt.y} r="2.8" fill="#f15a24" />
-                          <text
-                            x={pt.x}
-                            y={pt.y - 7}
-                            textAnchor="middle"
-                            fill="#0f172a"
-                            fontSize="7"
-                            fontFamily="var(--font-mono)"
-                            fontWeight="700"
-                          >
-                            {pt.label}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="journey-detail-right-col">
-                <div className="journey-detail-badge-row">
-                  <span className="journey-detail-subhead">{expNumberLabel}</span>
-                  <span className="journey-detail-duration-tag">
-                    {currentExp.length || "13 Days"} · {currentExp.nights || "12 Nights"}
-                  </span>
-                </div>
-
-                <h2 className="journey-detail-title">{currentExp.title}</h2>
-
-                <div className="journey-premise-block">
-                  <h4 className="journey-premise-heading">ARTISTIC PREMISE &amp; HIGHLIGHTS</h4>
-                  <p className="journey-premise-text">
-                    {currentExp.focus || "Monasteries, Silk Road history, sand dunes and the high lake"}
-                  </p>
-                  <p className="journey-premise-quote">
-                    “{currentExp.highlight || "Focused on the Ladakh heartland with no Changthang leg, allowing more breathing room and village immersion."}”
-                  </p>
-                </div>
-
-                <div className="journey-detail-action-row">
-                  <a
-                    href={`/journey/${currentExp.slug || "heartland"}`}
-                    onClick={(e) => handleOpenDossier(e, currentExp.slug || "heartland")}
-                    className="journey-dossier-btn"
-                    id="journey-dossier-cta-btn"
-                  >
-                    EXAMINE FULL DAY-BY-DAY DOSSIER &nbsp;↗
-                  </a>
-                  <span className="journey-detail-cohort-tag">Cohort of 6–10 artists</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Row: 4 Mini Expedition Selectors */}
-            <div className="journey-detail-bottom-row" role="tablist" aria-label="Expedition Switcher">
-              <span className="journey-switcher-label">EXPEDITIONS:</span>
-              {expeditions.slice(0, 4).map((exp, idx) => {
-                const expNum = `Expedition 0${idx + 1}`;
-                const isActive = exp.id === currentExp.id;
-
-                return (
-                  <button
-                    key={exp.id}
-                    type="button"
-                    className={`journey-mini-card ${isActive ? "active" : ""}`}
-                    onClick={() => handleSwitchExpedition(exp.id)}
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-label={`Switch to ${expNum} - ${exp.title}`}
-                  >
-                    <div className="journey-mini-card-slot">
-                      <div className="journey-mini-card-top">
-                        <span className="journey-mini-exp-label">{expNum}</span>
-                        <span className="journey-mini-length-label">{exp.length}</span>
-                      </div>
-                      <span className="journey-mini-title-label">{exp.title}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* MOBILE STREAMLINED VERTICAL DETAIL EXPERIENCE (< 1024px) */}
+        {viewMode === "detail" && currentExp && (
           <div
             className={`journey-mobile-detail-view journey-mobile-only ${
               isCrossfadingExp ? "is-crossfading" : ""
@@ -832,8 +891,9 @@ export default function Journey() {
               </div>
             </div>
           </div>
-        </>
-      )}
+        
+        )}
+      </div>
     </div>
   );
 }
