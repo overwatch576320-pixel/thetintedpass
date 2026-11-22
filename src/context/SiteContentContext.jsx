@@ -103,7 +103,7 @@ export function SiteContentProvider({ children }) {
             ...defaultSketchbookConfig,
             ...(parsed.sketchbook || {}),
             pages:
-              parsed.sketchbook?.pages && parsed.sketchbook.pages.length > 0
+              parsed.sketchbook?.pages && parsed.sketchbook.pages.length >= defaultSketchbookConfig.pages.length
                 ? parsed.sketchbook.pages
                 : defaultSketchbookConfig.pages
           },

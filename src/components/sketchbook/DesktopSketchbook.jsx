@@ -88,11 +88,14 @@ export default function DesktopSketchbook({
   }
 
   const totalContentPages = formattedPages.length;
-  // Spreads: 0 (front cover), 1..(last-1) (interior spreads), last (back cover)
-  // For 4 content pages: numInteriorSpreads = 2, last = 3 (back cover).
-  // Total slots: exactly last * 2 = 6 slots (0: front cover, 1..4: interior pages, 5: back cover)
-  const numInteriorSpreads = Math.ceil(totalContentPages / 2);
-  const last = numInteriorSpreads + 1;
+  // Spreads:
+  // - Spread 0: Closed front cover
+  // - Spread 1: Inside front cover (left) + Page 1 (right)
+  // - Spreads 2..(last-2): Interior paper double spreads (Pages 2&3, Pages 4&5, etc.)
+  // - Spread (last-1): Final page (left) + Inside back cover (right)
+  // - Spread last: Closed back cover
+  // Formula matching authentic Niyas architecture: last = Math.ceil(totalContentPages / 2) + 2
+  const last = Math.ceil(totalContentPages / 2) + 2;
   const totalSlots = last * 2;
 
   const reduced = useReducedMotion();
@@ -352,12 +355,14 @@ export default function DesktopSketchbook({
   const right = page === last ? null : page === 0 ? 0 : page * 2;
 
   // Render a specific face index:
-  // Slot 0: Front Cover
-  // Slot 1: Page 1 (Spread 1 Left)
-  // Slot 2: Page 2 (Spread 1 Right)
-  // Slot 3: Page 3 (Spread 2 Left)
-  // Slot 4: Page 4 (Spread 2 Right)
-  // Slot totalSlots - 1: Back Cover
+  // Slot 0: Front Cover (outside)
+  // Slot 1: Inside Front Cover (archival lining / bookplate on left of Spread 1)
+  // Slot 2: Page 1 (Right of Spread 1 - authentic unattached paper page)
+  // Slot 3: Page 2 (Left of Spread 2)
+  // Slot 4: Page 3 (Right of Spread 2)
+  // ...
+  // Slot totalSlots - 2: Inside Back Cover (Right of final spread)
+  // Slot totalSlots - 1: Back Cover (outside)
   const renderFace = (index) => {
     if (index === null) return null;
     if (index === 0) {
@@ -365,6 +370,24 @@ export default function DesktopSketchbook({
         <SketchPage
           cover
           coverSide="front"
+          bookSettings={bookSettings}
+        />
+      );
+    }
+    if (index === 1) {
+      return (
+        <SketchPage
+          cover
+          coverSide="inside-front"
+          bookSettings={bookSettings}
+        />
+      );
+    }
+    if (index === totalSlots - 2) {
+      return (
+        <SketchPage
+          cover
+          coverSide="inside-back"
           bookSettings={bookSettings}
         />
       );
@@ -378,62 +401,17 @@ export default function DesktopSketchbook({
         />
       );
     }
-    if (index === 1) {
-      return (
-        <SketchPage
-          page={1}
-          side="left"
-          pageData={formattedPages[0]}
-          bookSettings={bookSettings}
-        />
-      );
-    }
-    if (index === 2) {
-      return (
-        <SketchPage
-          page={2}
-          side="right"
-          pageData={formattedPages[1]}
-          bookSettings={bookSettings}
-        />
-      );
-    }
-    if (index === 3) {
-      return (
-        <SketchPage
-          page={3}
-          side="left"
-          pageData={formattedPages[2]}
-          bookSettings={bookSettings}
-        />
-      );
-    }
-    if (index === 4) {
-      return (
-        <SketchPage
-          page={4}
-          side="right"
-          pageData={formattedPages[3]}
-          bookSettings={bookSettings}
-        />
-      );
-    }
-    if (index === totalSlots - 2) {
-      return (
-        <SketchPage
-          cover
-          coverSide="back"
-          bookSettings={bookSettings}
-        />
-      );
-    }
 
-    const contentPageIdx = index - 1;
-    const pageData = formattedPages[contentPageIdx] || null;
+    // Interior content pages: index 2 is Page 1, index 3 is Page 2, index 4 is Page 3, etc.
+    const contentPageNum = index - 1; // 1-based page number (1, 2, 3...)
+    const contentIndex = index - 2; // 0-based array index into formattedPages (0, 1, 2...)
+    const pageData = formattedPages[contentIndex] || null;
+    const isRight = index % 2 === 0;
+
     return (
       <SketchPage
-        page={contentPageIdx + 1}
-        side={index % 2 === 0 ? "right" : "left"}
+        page={contentPageNum}
+        side={isRight ? "right" : "left"}
         pageData={pageData}
         bookSettings={bookSettings}
       />
@@ -446,8 +424,10 @@ export default function DesktopSketchbook({
       : page === last
       ? "Back cover"
       : page === 1
-      ? "Pages 1 & 2"
-      : `Pages ${page * 2 - 1} & ${Math.min(page * 2, totalContentPages)}`;
+      ? "Inside front cover · Page 1"
+      : page === last - 1
+      ? `Page ${totalContentPages} · Inside back cover`
+      : `Pages ${page * 2 - 2} & ${page * 2 - 1}`;
 
   return (
     <div className={`sketch-desktop ${closed ? "is-closed" : ""}`}>
