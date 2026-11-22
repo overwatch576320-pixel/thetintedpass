@@ -4,8 +4,11 @@ import { BOOK_LIGHT } from "./lighting";
 import { restingBookPose, turningBookPose } from "./book-pose";
 import { addBookLight, createBookRenderer, createPaperMaterial, paperStock, paperTexture, createCoverEdge } from "./book-rendering";
 const HINGE_DEPTH = 0.012, HINGE_INSET = 6e-3, HINGE_WIDTH = 0.055;
-const CORNER = 0.036, COLS = 64, CORNER_ROWS = 12, ROWS = 16 + CORNER_ROWS * 2, SCALE_X = 1.35, SCALE_Y = 1.6;
+const CORNER = 0.036, COLS = 64, CORNER_ROWS = 12, ROWS = 16 + CORNER_ROWS * 2;
 export function createDesktopPaperRenderer(host, width, height, sources) {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+  const SCALE_X = isMobile ? 1.08 : 1.35;
+  const SCALE_Y = isMobile ? 1.16 : 1.6;
   const renderer = createBookRenderer(host, width * 2 * SCALE_X, height * SCALE_Y);
   const camera = new THREE.PerspectiveCamera(2 * Math.atan(H * SCALE_Y / (2 * 6.2)) * 180 / Math.PI, 2 * width * SCALE_X / (height * SCALE_Y), 1, 12);
   camera.position.set(0, 0, 6.2);

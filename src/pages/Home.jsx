@@ -67,12 +67,14 @@ export default function Home() {
           <span>CURATED EXPEDITIONS</span>
           <span className="home-link-icon" aria-hidden="true">↗</span>
         </Link>
-        <Link to="/explore-ladakh" className="home-bottom-nav-link">
-          <span>INTERACTIVE MAP</span>
-        </Link>
-        <Link to="/contact" className="home-bottom-nav-link">
-          <span>RESERVE ATELIER</span>
-        </Link>
+        <div className="home-bottom-nav-subrow">
+          <Link to="/explore-ladakh" className="home-bottom-nav-link home-secondary-link">
+            <span>INTERACTIVE MAP</span>
+          </Link>
+          <Link to="/contact" className="home-bottom-nav-link home-secondary-link">
+            <span>RESERVE ATELIER</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

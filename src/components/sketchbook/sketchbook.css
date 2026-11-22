@@ -778,6 +778,28 @@
   display: block;
 }
 
+@media (max-width: 1023px) {
+  .sketch-desktop {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .sketch-desktop-frame {
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  .sketch-desktop-canvas {
+    width: 108% !important;
+    height: 116% !important;
+    left: -4% !important;
+    top: -8% !important;
+    overflow: visible !important;
+  }
+}
+
 .sketch-desktop-canvas canvas {
   display: block;
   width: 100% !important;

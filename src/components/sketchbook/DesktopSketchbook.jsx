@@ -7,22 +7,28 @@ import { projectShadow } from "./lighting";
 
 function dimensions() {
   if (typeof window === "undefined") {
-    return { width: 140, height: Math.round(140 * PAGE_ASPECT) };
+    return { width: 185, height: Math.round(185 * PAGE_ASPECT) };
   }
   if (window.innerWidth < 1024) {
-    // Mobile & tablet: double-page spread sized proportionally to fit within initial mobile viewport
+    // Mobile & tablet: double-page spread occupying approximately 94–96% of available content width
+    // with approximately 2–3% breathing room on each side
     const screenW = window.innerWidth;
     const screenH = window.innerHeight;
-    const maxSpreadW = Math.min(320, screenW - 36);
-    // Dynamic height ceiling that guarantees zero overlap with hero and bottom navigation buttons
-    const maxBookH = Math.min(168, Math.max(125, Math.floor((screenH - 390) * 0.85)));
-    const widthFromH = Math.floor(maxBookH / PAGE_ASPECT);
-    const widthFromW = Math.floor(maxSpreadW / 2);
-    const width = Math.max(105, Math.min(widthFromW, widthFromH));
+
+    // Target spread width = 94.8% of screen width (e.g. 356px on 375px, 370px on 390px, 408px on 430px)
+    const targetSpreadW = Math.round(screenW * 0.948);
+    let width = Math.floor(targetSpreadW / 2);
+
+    // Ensure height allows full visibility within mobile screen without vertical scrolling
+    // Budget: screenH - header (56px) - hero text (~125px) - nav buttons (~78px) - geo strip (28px) - padding (~20px)
+    const maxBookH = Math.max(180, Math.floor((screenH - 310) * 0.92));
+    if (width * PAGE_ASPECT > maxBookH) {
+      width = Math.floor(maxBookH / PAGE_ASPECT);
+    }
     const height = Math.round(width * PAGE_ASPECT);
     return { width, height };
   }
-  // Desktop: sized for desktop editorial layout
+  // Desktop: sized for desktop editorial layout (COMPLETELY UNCHANGED)
   const maxW = Math.min(330, Math.floor((window.innerWidth - 480) / 2));
   const maxH = Math.min(420, Math.max(260, window.innerHeight - 320));
   const width = Math.max(200, Math.min(maxW, Math.floor(maxH / PAGE_ASPECT)));
@@ -83,8 +89,11 @@ export default function DesktopSketchbook({
 
   const totalContentPages = formattedPages.length;
   // Spreads: 0 (front cover), 1..(last-1) (interior spreads), last (back cover)
-  const last = Math.ceil(totalContentPages / 2) + 1;
-  const totalSlots = (last + 1) * 2;
+  // For 4 content pages: numInteriorSpreads = 2, last = 3 (back cover).
+  // Total slots: exactly last * 2 = 6 slots (0: front cover, 1..4: interior pages, 5: back cover)
+  const numInteriorSpreads = Math.ceil(totalContentPages / 2);
+  const last = numInteriorSpreads + 1;
+  const totalSlots = last * 2;
 
   const reduced = useReducedMotion();
 
@@ -326,8 +335,10 @@ export default function DesktopSketchbook({
       return;
     }
     if (!active) return;
+    // Physical drag completion: if dragged past 28% of the spread, complete the turn.
+    // If user dragged less or reversed direction midway back towards start, cleanly snap back to current page!
     const distance = gesture.direction === 1 ? active.progress : 1 - active.progress;
-    const complete = !cancelled && distance > 0.15;
+    const complete = !cancelled && distance > 0.28;
     desired.current = complete ? active.to : active.from;
     animateTurn(
       active,
@@ -460,9 +471,12 @@ export default function DesktopSketchbook({
             return;
           const rect = event.currentTarget.getBoundingClientRect();
           const x = event.clientX - rect.left;
-          const bounds = restingBookPose(pageIndex(current.current), totalSlots);
           const middle = size.width;
-          if (Math.abs(x - middle) > (bounds.width * size.width) / 2) return;
+
+          // Seamless direction detection with ZERO dead zones across all pages:
+          // - Front cover closed (page 0): taps/drags anywhere open the book forward
+          // - Back cover closed (page last): taps/drags anywhere turn the page backward
+          // - Open spread: right page turns forward, left page turns backward
           const direction =
             current.current === 0
               ? 1
