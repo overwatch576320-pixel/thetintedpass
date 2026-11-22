@@ -49,24 +49,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Interactive 3D Artist's Sketchbook Editorial Feature */}
+      {/* Interactive Open Double-Page Artist's Sketchbook */}
       {isSketchbookEnabled && (
         <section
           className="home-sketchbook-stage animate-enter-2"
-          aria-label="Expedition Field Journal"
+          aria-label="Open Artist Sketchbook"
         >
-          <div className="home-sketchbook-editorial-header">
-            <span className="home-sketchbook-eyebrow">
-              {sketchbook.sectionEyebrow || "FIELD NOTES FROM THE HIMALAYAS"}
-            </span>
-            <h2 className="home-sketchbook-title">
-              {sketchbook.sectionHeading || "A Journal of Seeing"}
-            </h2>
-            {sketchbook.sectionIntro && (
-              <p className="home-sketchbook-intro">{sketchbook.sectionIntro}</p>
-            )}
-          </div>
-
           <div className="home-sketchbook-canvas-wrap">
             <Sketchbook bookSettings={sketchbook} pages={sketchbook.pages} />
           </div>

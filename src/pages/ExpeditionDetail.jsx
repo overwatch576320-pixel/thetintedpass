@@ -97,34 +97,36 @@ export default function ExpeditionDetail() {
       setSelectedDayIdx(idx);
 
       // Desktop strip auto-center
+      // Auto-scroll the pill into clear visibility only when overflow exists
       const strip = navStripRef.current;
       const pill = pillRefs.current[idx];
       if (strip && pill) {
-        const pillLeft = pill.offsetLeft;
-        const pillWidth = pill.offsetWidth;
         const stripWidth = strip.clientWidth;
-        strip.scrollTo({
-          left: pillLeft - stripWidth / 2 + pillWidth / 2,
-          behavior: "smooth"
-        });
+        const maxScroll = strip.scrollWidth - stripWidth;
+        if (maxScroll > 4) {
+          const pillLeft = pill.offsetLeft;
+          const pillWidth = pill.offsetWidth;
+          strip.scrollTo({
+            left: Math.max(0, Math.min(pillLeft - stripWidth / 2 + pillWidth / 2, maxScroll)),
+            behavior: "smooth"
+          });
+        }
       }
 
-      // Mobile strip auto-center
+      // Mobile strip auto-center only when overflow exists
       const mStrip = mobileNavStripRef.current;
       const mPill = mobilePillRefs.current[idx];
       if (mStrip && mPill) {
-        const pillLeft = mPill.offsetLeft;
-        const pillWidth = mPill.offsetWidth;
-        const stripWidth = mStrip.clientWidth;
-        mStrip.scrollTo({
-          left: pillLeft - stripWidth / 2 + pillWidth / 2,
-          behavior: "smooth"
-        });
-      }
-
-      // Guard against accidental horizontal window scroll
-      if (typeof window !== "undefined" && (window.scrollX !== 0 || window.pageXOffset !== 0)) {
-        window.scrollTo({ left: 0, top: window.scrollY });
+        const mStripWidth = mStrip.clientWidth;
+        const maxMScroll = mStrip.scrollWidth - mStripWidth;
+        if (maxMScroll > 4) {
+          const pillLeft = mPill.offsetLeft;
+          const pillWidth = mPill.offsetWidth;
+          mStrip.scrollTo({
+            left: Math.max(0, Math.min(pillLeft - mStripWidth / 2 + pillWidth / 2, maxMScroll)),
+            behavior: "smooth"
+          });
+        }
       }
 
       setTimeout(() => {
@@ -146,6 +148,7 @@ export default function ExpeditionDetail() {
         {/* Expedition Header Strip */}
         <div className="expedition-dossier-header">
           <div className="expedition-dossier-title-group">
+            <span className="expedition-dossier-eyebrow">FIELD EXPEDITION DOSSIER</span>
             <h1 className="expedition-dossier-title">{expedition.title}</h1>
             <span className="expedition-dossier-meta">
               {expedition.length} · Max {expedition.maxAltitude} · Cohort 6-10

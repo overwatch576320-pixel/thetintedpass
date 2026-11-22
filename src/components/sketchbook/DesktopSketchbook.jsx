@@ -1,16 +1,30 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
-import { PikaChevron } from "./PikaChevron";
 import { SketchPage } from "./SketchPage";
 import { PAGE_ASPECT } from "./geometry";
 import { restingBookPose } from "./book-pose";
 import { projectShadow } from "./lighting";
 
 function dimensions() {
-  if (typeof window === "undefined") return { width: 320, height: Math.round(320 * PAGE_ASPECT) };
-  // Responsive sizing constrained within viewport and design panel
-  const maxW = Math.min(360, Math.floor((window.innerWidth - 180) / 2));
-  const maxH = Math.min(440, Math.max(280, window.innerHeight - 340));
+  if (typeof window === "undefined") {
+    return { width: 140, height: Math.round(140 * PAGE_ASPECT) };
+  }
+  if (window.innerWidth < 1024) {
+    // Mobile & tablet: double-page spread sized proportionally to fit within initial mobile viewport
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const maxSpreadW = Math.min(320, screenW - 36);
+    // Dynamic height ceiling that guarantees zero overlap with hero and bottom navigation buttons
+    const maxBookH = Math.min(168, Math.max(125, Math.floor((screenH - 390) * 0.85)));
+    const widthFromH = Math.floor(maxBookH / PAGE_ASPECT);
+    const widthFromW = Math.floor(maxSpreadW / 2);
+    const width = Math.max(105, Math.min(widthFromW, widthFromH));
+    const height = Math.round(width * PAGE_ASPECT);
+    return { width, height };
+  }
+  // Desktop: sized for desktop editorial layout
+  const maxW = Math.min(330, Math.floor((window.innerWidth - 480) / 2));
+  const maxH = Math.min(420, Math.max(260, window.innerHeight - 320));
   const width = Math.max(200, Math.min(maxW, Math.floor(maxH / PAGE_ASPECT)));
   return { width, height: Math.round(width * PAGE_ASPECT) };
 }
@@ -44,7 +58,30 @@ export default function DesktopSketchbook({
   const generation = useRef(0);
   const drive = useRef(() => {});
 
-  const totalContentPages = Math.max(2, pages.length);
+  // Ensure minimum 4 pages and even count
+  const formattedPages = [...pages];
+  while (formattedPages.length < 4) {
+    const idx = formattedPages.length + 1;
+    formattedPages.push({
+      id: `page-${idx}`,
+      pageNumber: idx,
+      title: `Blank Folio ${idx}`,
+      isBlank: true,
+      image: null,
+    });
+  }
+  if (formattedPages.length % 2 !== 0) {
+    const idx = formattedPages.length + 1;
+    formattedPages.push({
+      id: `page-${idx}`,
+      pageNumber: idx,
+      title: `Blank Folio ${idx}`,
+      isBlank: true,
+      image: null,
+    });
+  }
+
+  const totalContentPages = formattedPages.length;
   // Spreads: 0 (front cover), 1..(last-1) (interior spreads), last (back cover)
   const last = Math.ceil(totalContentPages / 2) + 1;
   const totalSlots = (last + 1) * 2;
@@ -269,7 +306,7 @@ export default function DesktopSketchbook({
       engine.current?.dispose();
       engine.current = null;
     };
-  }, [size.width, size.height, reduced, rest, pages, totalSlots]);
+  }, [size.width, size.height, reduced, rest, totalSlots, pages]);
 
   function release(event, cancelled = false) {
     const gesture = drag.current;
@@ -304,11 +341,12 @@ export default function DesktopSketchbook({
   const right = page === last ? null : page === 0 ? 0 : page * 2;
 
   // Render a specific face index:
-  // index 0: front cover
-  // index 1: inside front cover (Atelier colophon / bookplate)
-  // index 2 to totalSlots - 3: content pages
-  // index totalSlots - 2: inside back cover
-  // index totalSlots - 1: back cover
+  // Slot 0: Front Cover
+  // Slot 1: Page 1 (Spread 1 Left)
+  // Slot 2: Page 2 (Spread 1 Right)
+  // Slot 3: Page 3 (Spread 2 Left)
+  // Slot 4: Page 4 (Spread 2 Right)
+  // Slot totalSlots - 1: Back Cover
   const renderFace = (index) => {
     if (index === null) return null;
     if (index === 0) {
@@ -330,43 +368,57 @@ export default function DesktopSketchbook({
       );
     }
     if (index === 1) {
-      // Inside front cover
       return (
-        <div className="sketch-page is-left sketch-inside-cover">
-          <article className="mobile-book-paper sketch-paper inside-cover-plate">
-            <div className="inside-cover-monogram">TP</div>
-            <h4 className="inside-cover-heading">{bookSettings.bookTitle || "THE TINTED PASS"}</h4>
-            <p className="inside-cover-subtitle">
-              {bookSettings.bookSubtitle || "Trans-Himalayan Field Sketchbook & Atelier Portfolio"}
-            </p>
-            <div className="inside-cover-rule" />
-            <p className="inside-cover-text">
-              Hand-bound linen edition. Grated Badakhshan lapis, Alchi apricot tree gum, and natural mountain cinnabar ground on slate.
-            </p>
-            <div className="inside-cover-edition">COHORT ATELIER · 2026</div>
-          </article>
-        </div>
+        <SketchPage
+          page={1}
+          side="left"
+          pageData={formattedPages[0]}
+          bookSettings={bookSettings}
+        />
+      );
+    }
+    if (index === 2) {
+      return (
+        <SketchPage
+          page={2}
+          side="right"
+          pageData={formattedPages[1]}
+          bookSettings={bookSettings}
+        />
+      );
+    }
+    if (index === 3) {
+      return (
+        <SketchPage
+          page={3}
+          side="left"
+          pageData={formattedPages[2]}
+          bookSettings={bookSettings}
+        />
+      );
+    }
+    if (index === 4) {
+      return (
+        <SketchPage
+          page={4}
+          side="right"
+          pageData={formattedPages[3]}
+          bookSettings={bookSettings}
+        />
       );
     }
     if (index === totalSlots - 2) {
-      // Inside back cover
       return (
-        <div className="sketch-page is-right sketch-inside-cover">
-          <article className="mobile-book-paper sketch-paper inside-cover-plate">
-            <h4 className="inside-cover-heading">ATELIER COLOPHON</h4>
-            <p className="inside-cover-text">
-              Bound in the Old Town Precinct of Leh, Ladakh (3,524 m).
-              Cold-pressed cotton rag, 300 gsm.
-            </p>
-            <div className="inside-cover-rule" />
-            <p className="inside-cover-footer">THE TINTED PASS · TRANS-HIMALAYAS</p>
-          </article>
-        </div>
+        <SketchPage
+          cover
+          coverSide="back"
+          bookSettings={bookSettings}
+        />
       );
     }
 
-    const contentPageIdx = index - 2;
-    const pageData = pages[contentPageIdx] || null;
+    const contentPageIdx = index - 1;
+    const pageData = formattedPages[contentPageIdx] || null;
     return (
       <SketchPage
         page={contentPageIdx + 1}
@@ -383,10 +435,8 @@ export default function DesktopSketchbook({
       : page === last
       ? "Back cover"
       : page === 1
-      ? "Inside front cover · Page 1"
-      : page === last - 1
-      ? `Page ${totalContentPages} · Inside back cover`
-      : `Pages ${page * 2 - 2}–${Math.min(page * 2 - 1, totalContentPages)}`;
+      ? "Pages 1 & 2"
+      : `Pages ${page * 2 - 1} & ${Math.min(page * 2, totalContentPages)}`;
 
   return (
     <div className={`sketch-desktop ${closed ? "is-closed" : ""}`}>
@@ -398,13 +448,12 @@ export default function DesktopSketchbook({
         style={{ width: size.width * 2, height: size.height }}
         aria-busy={!presented}
         role="group"
-        aria-label="3D Sketchbook. Use side arrows, drag page corners, or press keyboard arrow keys."
+        aria-label="3D Artist Sketchbook. Click or drag to turn pages."
         tabIndex={presented ? 0 : -1}
         onPointerDown={(event) => {
           if (
             !event.isPrimary ||
             event.button !== 0 ||
-            event.target.closest("button") ||
             !ready.current ||
             turn.current
           )
@@ -424,19 +473,31 @@ export default function DesktopSketchbook({
               : -1;
           drag.current = {
             id: event.pointerId,
-            x: event.clientX,
-            y: event.clientY,
+            startX: event.clientX,
+            startY: event.clientY,
             direction,
             moved: false,
+            isCancelled: false,
           };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
           const gesture = drag.current;
-          if (!gesture || gesture.id !== event.pointerId || !engine.current || reduced)
+          if (!gesture || gesture.id !== event.pointerId || !engine.current || reduced || gesture.isCancelled)
             return;
-          const dx = event.clientX - gesture.x;
-          if (!gesture.moved && Math.abs(dx) < 6) return;
+          const dx = event.clientX - gesture.startX;
+          const dy = event.clientY - gesture.startY;
+          if (!gesture.moved) {
+            // Detect vertical scroll on mobile to allow native page scroll
+            if (Math.abs(dy) > Math.abs(dx) * 1.2 && Math.abs(dy) > 7) {
+              gesture.isCancelled = true;
+              if (frame.current?.hasPointerCapture(event.pointerId)) {
+                frame.current.releasePointerCapture(event.pointerId);
+              }
+              return;
+            }
+            if (Math.abs(dx) < 6) return;
+          }
           gesture.moved = true;
           const active = turn.current ?? prepare(gesture.direction);
           if (!active) return;
@@ -486,44 +547,11 @@ export default function DesktopSketchbook({
         {/* WebGL Canvas Host */}
         <div ref={host} className="sketch-desktop-canvas" aria-hidden="true" />
 
-        {/* Accessible Side Chevrons */}
-        <nav
-          ref={nav}
-          className="sketch-side-navigation"
-          style={{ width: pose.width * size.width }}
-          aria-label="Sketchbook Navigation"
-        >
-          <button
-            type="button"
-            aria-label={
-              page === 1
-                ? "Close the sketchbook"
-                : page === last
-                ? "Open the sketchbook"
-                : "Previous pages"
-            }
-            disabled={!presented || page === 0}
-            onClick={() => request(-1)}
-          >
-            <PikaChevron direction="left" />
-          </button>
+        {/* Hidden screen-reader announcement */}
+        <nav ref={nav} className="sketch-side-navigation sr-only" aria-label="Sketchbook Navigation">
           <span className="sr-only" aria-live="polite">
             {announcement}
           </span>
-          <button
-            type="button"
-            aria-label={
-              page === 0
-                ? "Open the sketchbook"
-                : page === last - 1
-                ? "Close the sketchbook"
-                : "Next pages"
-            }
-            disabled={!presented || page === last}
-            onClick={() => request(1)}
-          >
-            <PikaChevron direction="right" />
-          </button>
         </nav>
       </div>
     </div>

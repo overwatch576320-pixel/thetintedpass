@@ -18,7 +18,7 @@ export function BookCover({
     >
       <img
         className="cover-stock-image"
-        src="textures/charcoal-paper.png"
+        src="/textures/charcoal-paper.png"
         alt=""
         draggable={false}
       />

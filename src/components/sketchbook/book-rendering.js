@@ -55,8 +55,8 @@ export function paperTexture(element, width, height, ink = true, maxScale = 3) {
   ctx.scale(scale, scale);
   const isCover = !!element.querySelector(".mobile-book-cover");
   const palette = getComputedStyle(element);
-  const coverColor = palette.getPropertyValue("--sketchbook-cover").trim();
-  const paperColor = palette.getPropertyValue("--sketchbook-paper").trim();
+  const coverColor = palette.getPropertyValue("--sketchbook-cover")?.trim() || "#1a2522";
+  const paperColor = palette.getPropertyValue("--sketchbook-paper")?.trim() || "#fcf9f2";
   ctx.fillStyle = isCover ? coverColor : paperColor;
   ctx.fillRect(0, 0, width, height);
   if (isCover) {

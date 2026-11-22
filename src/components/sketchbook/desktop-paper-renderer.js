@@ -14,8 +14,9 @@ export function createDesktopPaperRenderer(host, width, height, sources) {
   addBookLight(scene);
   const stock = paperStock();
   const isCover = (index2) => index2 < 2 || index2 >= sources.length - 2;
+  const isOutsideCover = (index2) => index2 === 0 || index2 === sources.length - 1;
   const coverTexture = paperTexture(sources[0], width, height, true, 2);
-  const textures = sources.map((source, index2) => isCover(index2) ? coverTexture : paperTexture(source, width, height, true, 2));
+  const textures = sources.map((source, index2) => isOutsideCover(index2) ? coverTexture : paperTexture(source, width, height, true, 2));
   const edgeColor = getComputedStyle(host).getPropertyValue("--sketchbook-cover-edge").trim() || "#080808";
   const last = sources.length / 2, lastTurn = last - 1;
   const index = (spread) => spread === 0 ? 0 : spread === last ? sources.length - 1 : spread * 2 - 1;

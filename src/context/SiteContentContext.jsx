@@ -53,7 +53,10 @@ const defaultContent = {
   journalEntries: fieldNotesJournal,
 
   // Image Asset Slots with Solid-Colour Defaults
-  assets: defaultAssetConfig
+  assets: defaultAssetConfig,
+
+  // 3D Sketchbook Configuration
+  sketchbook: defaultSketchbookConfig
 };
 
 const initialSampleEnquiries = [
@@ -96,6 +99,14 @@ export function SiteContentProvider({ children }) {
         return {
           ...defaultContent,
           ...parsed,
+          sketchbook: {
+            ...defaultSketchbookConfig,
+            ...(parsed.sketchbook || {}),
+            pages:
+              parsed.sketchbook?.pages && parsed.sketchbook.pages.length > 0
+                ? parsed.sketchbook.pages
+                : defaultSketchbookConfig.pages
+          },
           assets: Object.fromEntries(
             Object.entries(defaultAssetConfig).map(([k, def]) => [
               k,
@@ -306,6 +317,65 @@ export function SiteContentProvider({ children }) {
     }
   };
 
+  const updateSketchbookSettings = (newSettings) => {
+    setContent((prev) => {
+      const currentBook = prev.sketchbook || defaultSketchbookConfig;
+      const updated = {
+        ...prev,
+        sketchbook: {
+          ...currentBook,
+          ...newSettings
+        }
+      };
+      if (supabase) {
+        supabase
+          .from("site_content")
+          .upsert({ id: "main_content", content: updated, updated_at: new Date().toISOString() })
+          .catch(console.error);
+      }
+      return updated;
+    });
+  };
+
+  const updateSketchbookPages = (newPages) => {
+    setContent((prev) => {
+      const currentBook = prev.sketchbook || defaultSketchbookConfig;
+      const updated = {
+        ...prev,
+        sketchbook: {
+          ...currentBook,
+          pages: newPages
+        }
+      };
+      if (supabase) {
+        supabase
+          .from("site_content")
+          .upsert({ id: "main_content", content: updated, updated_at: new Date().toISOString() })
+          .catch(console.error);
+      }
+      return updated;
+    });
+  };
+
+  const saveSketchbook = (newSketchbook) => {
+    setContent((prev) => {
+      const updated = {
+        ...prev,
+        sketchbook: {
+          ...defaultSketchbookConfig,
+          ...newSketchbook
+        }
+      };
+      if (supabase) {
+        supabase
+          .from("site_content")
+          .upsert({ id: "main_content", content: updated, updated_at: new Date().toISOString() })
+          .catch(console.error);
+      }
+      return updated;
+    });
+  };
+
   return (
     <SiteContentContext.Provider
       value={{
@@ -318,7 +388,10 @@ export function SiteContentProvider({ children }) {
         resetContent,
         addEnquiry,
         updateEnquiryStatus,
-        deleteEnquiry
+        deleteEnquiry,
+        updateSketchbookSettings,
+        updateSketchbookPages,
+        saveSketchbook
       }}
     >
       {children}

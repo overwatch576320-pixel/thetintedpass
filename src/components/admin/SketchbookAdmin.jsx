@@ -326,9 +326,16 @@ export default function SketchbookAdmin({ triggerNotice }) {
               >
                 <div className="admin-card-top-row">
                   <span className="admin-page-seq-badge">P. {idx + 1}</span>
-                  <span className="admin-page-template-badge">
-                    {TEMPLATE_OPTIONS.find((t) => t.id === p.template)?.label || p.template}
+                  <span className="admin-page-spread-badge">
+                    Spread {Math.floor(idx / 2) + 1} · {idx % 2 === 0 ? "Left" : "Right"}
                   </span>
+                  {p.isBlank ? (
+                    <span className="admin-page-blank-badge">Blank Folio</span>
+                  ) : (
+                    <span className="admin-page-template-badge">
+                      {TEMPLATE_OPTIONS.find((t) => t.id === p.template)?.label || p.template}
+                    </span>
+                  )}
                   <button
                     type="button"
                     className={`admin-status-pill ${p.published !== false ? "published" : "draft"}`}
@@ -345,7 +352,11 @@ export default function SketchbookAdmin({ triggerNotice }) {
                   role="button"
                   tabIndex={0}
                 >
-                  {p.image ? (
+                  {p.isBlank ? (
+                    <div className="admin-thumb-blank-paper">
+                      <span>📄 Blank Cotton Paper</span>
+                    </div>
+                  ) : p.image ? (
                     <img src={p.image} alt="" />
                   ) : (
                     <div className="admin-thumb-placeholder">No Image Assigned</div>
@@ -712,41 +723,73 @@ export default function SketchbookAdmin({ triggerNotice }) {
                 </div>
               </div>
 
-              {/* Main Image Upload & Preview */}
+              {/* Folio Type: Artwork vs Blank Paper */}
               <div className="admin-input-group">
-                <label>Primary Image (JPG, PNG, WebP)</label>
-                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    ref={fileInputRef}
-                    style={{ display: "none" }}
-                    onChange={(e) => handleImageUpload(e.target.files?.[0], false)}
-                  />
-                  <button
-                    type="button"
-                    className="admin-action-pill-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload size={13} style={{ marginRight: "5px" }} />
-                    Upload Image
-                  </button>
-                  <input
-                    type="text"
-                    placeholder="or enter image path / URL"
-                    value={editingPage.image || ""}
-                    onChange={(e) =>
-                      setEditingPage((prev) => ({ ...prev, image: e.target.value }))
-                    }
-                    style={{ flex: 1 }}
-                  />
+                <label>Folio Type (Double-Page Spread Alignment)</label>
+                <div style={{ display: "flex", gap: "20px", marginTop: "6px" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#f1f5f9" }}>
+                    <input
+                      type="radio"
+                      name="pageType"
+                      checked={!editingPage.isBlank}
+                      onChange={() => setEditingPage((prev) => ({ ...prev, isBlank: false }))}
+                    />
+                    <span>Artwork / Field Sketch</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", color: "#f1f5f9" }}>
+                    <input
+                      type="radio"
+                      name="pageType"
+                      checked={!!editingPage.isBlank}
+                      onChange={() => setEditingPage((prev) => ({ ...prev, isBlank: true }))}
+                    />
+                    <span>Blank Cotton Paper Folio</span>
+                  </label>
                 </div>
-                {editingPage.image && (
-                  <div className="admin-image-preview-box">
-                    <img src={editingPage.image} alt="Preview" />
-                  </div>
+                {editingPage.isBlank && (
+                  <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "6px" }}>
+                    Renders archival Himalayan cotton rag paper with subtle folio numbering, perfect for spacing double-page spreads.
+                  </p>
                 )}
               </div>
+
+              {/* Main Image Upload & Preview (for Artwork Folios) */}
+              {!editingPage.isBlank && (
+                <div className="admin-input-group">
+                  <label>Primary Image (JPG, PNG, WebP)</label>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      ref={fileInputRef}
+                      style={{ display: "none" }}
+                      onChange={(e) => handleImageUpload(e.target.files?.[0], false)}
+                    />
+                    <button
+                      type="button"
+                      className="admin-action-pill-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload size={13} style={{ marginRight: "5px" }} />
+                      Upload Image
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="or enter image path / URL"
+                      value={editingPage.image || ""}
+                      onChange={(e) =>
+                        setEditingPage((prev) => ({ ...prev, image: e.target.value }))
+                      }
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                  {editingPage.image && (
+                    <div className="admin-image-preview-box">
+                      <img src={editingPage.image} alt="Preview" />
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Secondary Image if Two-Image Spread */}
               {editingPage.template === "two_image_spread" && (
