@@ -82,6 +82,26 @@
   text-align: center;
 }
 
+.sketchbook-cover-custom-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0 16px 16px 0;
+  z-index: 2;
+}
+
+.cover-full-art-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
 .sketchbook-cover-inner {
   display: flex;
   flex-direction: column;

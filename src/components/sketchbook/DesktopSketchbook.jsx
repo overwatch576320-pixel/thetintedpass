@@ -21,17 +21,17 @@ function dimensions() {
 
     // Ensure height allows full visibility within mobile screen without vertical scrolling
     // Budget: screenH - header (56px) - hero text (~125px) - nav buttons (~78px) - geo strip (28px) - padding (~20px)
-    const maxBookH = Math.max(180, Math.floor((screenH - 310) * 0.92));
+    const maxBookH = Math.max(180, Math.floor((screenH - 325) * 0.92));
     if (width * PAGE_ASPECT > maxBookH) {
       width = Math.floor(maxBookH / PAGE_ASPECT);
     }
     const height = Math.round(width * PAGE_ASPECT);
     return { width, height };
   }
-  // Desktop: sized for desktop editorial layout (COMPLETELY UNCHANGED)
-  const maxW = Math.min(330, Math.floor((window.innerWidth - 480) / 2));
-  const maxH = Math.min(420, Math.max(260, window.innerHeight - 320));
-  const width = Math.max(200, Math.min(maxW, Math.floor(maxH / PAGE_ASPECT)));
+  // Desktop: sized for desktop editorial layout in proportional A4 ratio
+  const maxW = Math.min(320, Math.floor((window.innerWidth - 480) / 2));
+  const maxH = Math.min(440, Math.max(260, window.innerHeight - 320));
+  const width = Math.max(190, Math.min(maxW, Math.floor(maxH / PAGE_ASPECT)));
   return { width, height: Math.round(width * PAGE_ASPECT) };
 }
 

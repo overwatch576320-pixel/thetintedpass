@@ -8,7 +8,8 @@ export const defaultSketchbookConfig = {
   enabled: true,
   bookTitle: "LADAKH EXPEDITION JOURNAL",
   bookSubtitle: "High-Altitude Plein Air Studies",
-  coverColor: "#1a2522",
+  coverColor: "#14191d",
+  coverImage: "/editorial/sketchbook-a4-cover.jpg",
   pages: [
     {
       id: "page-1",

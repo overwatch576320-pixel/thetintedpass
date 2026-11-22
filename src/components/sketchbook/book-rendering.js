@@ -93,7 +93,11 @@ export function paperTexture(element, width, height, ink = true, maxScale = 3) {
       const fit = (style.objectFit === "cover" ? Math.max : Math.min)(rect.width / node.naturalWidth, rect.height / node.naturalHeight);
       const width2 = node.naturalWidth * fit, height2 = node.naturalHeight * fit;
       ctx.save();
-      ctx.globalCompositeOperation = node.classList.contains("cover-stock-image") ? "source-over" : "multiply";
+      ctx.globalCompositeOperation =
+        node.classList.contains("cover-stock-image") ||
+        node.classList.contains("cover-full-art-image")
+          ? "source-over"
+          : "multiply";
       ctx.drawImage(node, rect.left - origin.left + (rect.width - width2) / 2, rect.top - origin.top + (rect.height - height2) / 2, width2, height2);
       ctx.restore();
     }

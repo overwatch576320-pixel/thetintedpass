@@ -33,12 +33,14 @@ export function BookCover({
           : `Sketchbook Cover: ${coverTitle}`
       }
     >
-      <img
-        className="cover-stock-image"
-        src="/textures/charcoal-paper.png"
-        alt=""
-        draggable={false}
-      />
+      {(!coverImage || isInside || isBack) && (
+        <img
+          className="cover-stock-image"
+          src="/textures/charcoal-paper.png"
+          alt=""
+          draggable={false}
+        />
+      )}
 
       {isInsideFront ? (
         <div className="sketchbook-cover-foil-content sketch-inside-cover">
@@ -67,20 +69,26 @@ export function BookCover({
           </div>
         </div>
       ) : !isBack ? (
-        <div className="sketchbook-cover-foil-content">
-          <div className="sketchbook-cover-inner">
-            <div className="cover-eyebrow-text">{coverEyebrow}</div>
-            {coverImage && (
-              <div className="cover-center-artwork">
-                <img src={coverImage} alt="" draggable={false} />
-              </div>
-            )}
-            <h2 className="cover-main-title">{coverTitle}</h2>
-            <div className="cover-rule-divider" />
-            <p className="cover-subtitle-text">{coverSubtitle}</p>
-            <div className="cover-footer-brand">THE TINTED PASS · LEH</div>
+        coverImage ? (
+          <div className="sketchbook-cover-custom-art">
+            <img
+              className="cover-full-art-image"
+              src={coverImage}
+              alt={coverTitle}
+              draggable={false}
+            />
           </div>
-        </div>
+        ) : (
+          <div className="sketchbook-cover-foil-content">
+            <div className="sketchbook-cover-inner">
+              <div className="cover-eyebrow-text">{coverEyebrow}</div>
+              <h2 className="cover-main-title">{coverTitle}</h2>
+              <div className="cover-rule-divider" />
+              <p className="cover-subtitle-text">{coverSubtitle}</p>
+              <div className="cover-footer-brand">THE TINTED PASS · LEH</div>
+            </div>
+          </div>
+        )
       ) : (
         <div className="sketchbook-cover-foil-content">
           <div className="sketchbook-back-inner">

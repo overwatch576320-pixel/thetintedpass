@@ -102,6 +102,7 @@ export function SiteContentProvider({ children }) {
           sketchbook: {
             ...defaultSketchbookConfig,
             ...(parsed.sketchbook || {}),
+            coverImage: parsed.sketchbook?.coverImage || defaultSketchbookConfig.coverImage,
             pages:
               parsed.sketchbook?.pages && parsed.sketchbook.pages.length >= defaultSketchbookConfig.pages.length
                 ? parsed.sketchbook.pages

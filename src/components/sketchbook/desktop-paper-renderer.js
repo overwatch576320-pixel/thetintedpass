@@ -4,7 +4,7 @@ import { BOOK_LIGHT } from "./lighting";
 import { restingBookPose, turningBookPose } from "./book-pose";
 import { addBookLight, createBookRenderer, createPaperMaterial, paperStock, paperTexture, createCoverEdge } from "./book-rendering";
 const HINGE_DEPTH = 0.012, HINGE_INSET = 6e-3, HINGE_WIDTH = 0.055;
-const CORNER = 0.036, COLS = 64, CORNER_ROWS = 12, ROWS = 16 + CORNER_ROWS * 2;
+const CORNER = 0.040, COLS = 64, CORNER_ROWS = 12, ROWS = 16 + CORNER_ROWS * 2;
 export function createDesktopPaperRenderer(host, width, height, sources) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
   const SCALE_X = isMobile ? 1.08 : 1.35;
@@ -20,7 +20,7 @@ export function createDesktopPaperRenderer(host, width, height, sources) {
   const isOutsideCover = (index2) => index2 === 0 || index2 === sources.length - 1;
   const coverTexture = paperTexture(sources[0], width, height, true, 2);
   const textures = sources.map((source, index2) => isOutsideCover(index2) ? coverTexture : paperTexture(source, width, height, true, 2));
-  const edgeColor = getComputedStyle(host).getPropertyValue("--sketchbook-cover-edge").trim() || "#080808";
+  const edgeColor = getComputedStyle(host).getPropertyValue("--sketchbook-cover-edge").trim() || "#161c1f";
   const last = sources.length / 2, lastTurn = last - 1;
   const index = (spread) => spread === 0 ? 0 : spread === last ? sources.length - 1 : spread * 2 - 1;
   const pose = (spread) => restingBookPose(index(spread), sources.length);
@@ -31,7 +31,7 @@ export function createDesktopPaperRenderer(host, width, height, sources) {
     const mesh = new THREE.Mesh(geometry, paper.material);
     mesh.frustumCulled = false;
     book.add(mesh);
-    return { ...paper, geometry, mesh, edge: backing ? null : createCoverEdge({ geometry, mesh }, COLS, ROWS, edgeColor, 2e-3), cornersReady: false };
+    return { ...paper, geometry, mesh, edge: backing ? null : createCoverEdge({ geometry, mesh }, COLS, ROWS, edgeColor, 4.5e-3), cornersReady: false };
   }
   const left = leaf(), right = leaf(), moving = leaf(), leftBoard = leaf(true), rightBoard = leaf(true);
   const leaves = [left, right, moving, leftBoard, rightBoard];
@@ -86,8 +86,8 @@ export function createDesktopPaperRenderer(host, width, height, sources) {
     board.material.transparent = true;
     board.material.depthWrite = false;
   }
-  shape(leftBoard, -1, 0, true, 0, 1.012);
-  shape(rightBoard, 1, 0, true, 0, 1.012);
+  shape(leftBoard, -1, 0, true, 0, 1.016);
+  shape(rightBoard, 1, 0, true, 0, 1.016);
   left.mesh.position.z = right.mesh.position.z = 2e-3;
   moving.mesh.position.z = 4e-3;
   const shadeMaterial = new THREE.ShaderMaterial({
