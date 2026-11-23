@@ -143,6 +143,11 @@ export function solveAllCarouselBooks(
   const clampedS = Math.max(0, Math.min(2, scrollProgress));
   const books = [];
 
+  // Natural subtle rotation angles (hardcover book pivot):
+  const yawHero = 11.5;
+  const yawYield = 9.5;
+  const yawFar = 3.0;
+
   for (let i = 0; i < 3; i++) {
     const diff = i - clampedS;
     const absDiff = Math.abs(diff);
@@ -152,7 +157,7 @@ export function solveAllCarouselBooks(
     const rotZ = diff * 8.5;
     const scale = Math.max(0.75, 1 - absDiff * 0.06);
 
-    let z = 30;
+    let z = 28;
     let rotY = 0;
     let deltaX = 0;
 
@@ -163,28 +168,28 @@ export function solveAllCarouselBooks(
       if (prefer0) {
         // Book 0 is advancing towards center (moving right, +X)
         if (i === 0) {
-          z = 32 + bell * 8; // lifts into foreground (32px to 40px)
-          rotY = 16 * bell; // turns right (+Y) in direction of travel
+          z = 28 + bell * 2; // lifts subtly into foreground (28px to 30px)
+          rotY = yawHero * bell; // natural pivot right (+Y)
         } else if (i === 1) {
-          z = -28 - bell * 18; // dips into background (-28px to -46px)
-          rotY = -14 * bell; // turns left (-Y) away
-          deltaX = 6 * bell; // small outward adjustment
+          z = -20 - bell * 6; // dips into background (-20px to -26px)
+          rotY = -yawYield * bell; // turns left (-Y) away
+          deltaX = 3.5 * bell; // tiny 3.5px outward clearance
         } else if (i === 2) {
-          z = -80 - bell * 25; // background right (-80px to -105px)
-          rotY = 4 * bell;
+          z = -60 - bell * 6; // background right (-60px to -66px)
+          rotY = yawFar * bell;
         }
       } else {
         // Book 1 is hero (or moving towards Book 1)
         if (i === 1) {
-          z = 30 + bell * 10; // lifts into foreground (30px to 40px)
-          rotY = -16 * bell; // turns left (-Y) in direction of travel
+          z = 28 + bell * 2; // lifts subtly into foreground (28px to 30px)
+          rotY = -yawHero * bell; // natural pivot left (-Y)
         } else if (i === 0) {
-          z = -18 - bell * 28; // dips into background (-18px to -46px)
-          rotY = 14 * bell; // turns right (+Y) away
-          deltaX = -6 * bell;
+          z = -20 - bell * 6; // dips into background (-20px to -26px)
+          rotY = yawYield * bell; // turns right (+Y) away
+          deltaX = -3.5 * bell; // tiny 3.5px outward clearance
         } else if (i === 2) {
-          z = -75 - bell * 30; // background right (-75px to -105px)
-          rotY = 4 * bell;
+          z = -60 - bell * 6; // background right (-60px to -66px)
+          rotY = yawFar * bell;
         }
       }
     } else if (clampedS > 1 && clampedS <= 2) {
@@ -195,28 +200,28 @@ export function solveAllCarouselBooks(
       if (prefer2) {
         // Book 2 is advancing towards center (moving left, -X)
         if (i === 2) {
-          z = 32 + bell * 8; // lifts into foreground (32px to 40px)
-          rotY = -16 * bell; // turns left (-Y) in direction of travel
+          z = 28 + bell * 2; // lifts subtly into foreground (28px to 30px)
+          rotY = -yawHero * bell; // natural pivot left (-Y)
         } else if (i === 1) {
-          z = -28 - bell * 18; // dips into background (-28px to -46px)
-          rotY = 14 * bell; // turns right (+Y) away
-          deltaX = -6 * bell;
+          z = -20 - bell * 6; // dips into background (-20px to -26px)
+          rotY = yawYield * bell; // turns right (+Y) away
+          deltaX = -3.5 * bell;
         } else if (i === 0) {
-          z = -80 - bell * 25; // background left (-80px to -105px)
-          rotY = -4 * bell;
+          z = -60 - bell * 6; // background left (-60px to -66px)
+          rotY = -yawFar * bell;
         }
       } else {
         // Book 1 is hero (or moving towards Book 1 from right)
         if (i === 1) {
-          z = 30 + bell * 10; // lifts into foreground (30px to 40px)
-          rotY = 16 * bell; // turns right (+Y) in direction of travel
+          z = 28 + bell * 2; // lifts subtly into foreground (28px to 30px)
+          rotY = yawHero * bell; // natural pivot right (+Y)
         } else if (i === 2) {
-          z = -55 - bell * 30; // dips into background (-55px to -85px)
-          rotY = -14 * bell; // turns left (-Y) away
-          deltaX = 6 * bell;
+          z = -20 - bell * 6; // dips into background (-20px to -26px)
+          rotY = -yawYield * bell; // turns left (-Y) away
+          deltaX = 3.5 * bell;
         } else if (i === 0) {
-          z = -75 - bell * 30; // background left (-75px to -105px)
-          rotY = -4 * bell;
+          z = -60 - bell * 6; // background left (-60px to -66px)
+          rotY = -yawFar * bell;
         }
       }
     }
@@ -245,7 +250,7 @@ export function solveAllCarouselBooks(
   }
 
   // Continuous collision avoidance solver (3-pass relaxation)
-  const safetyMargin = 8;
+  const safetyMargin = 7.0;
   for (let pass = 0; pass < 3; pass++) {
     relaxPair(books[0], books[1], dimensions, safetyMargin);
     relaxPair(books[1], books[2], dimensions, safetyMargin);
@@ -284,7 +289,7 @@ export function getCoordinatedBookTransform({
   // Baseline Fan positions for selection transitions
   const fanX = diff * stepX;
   const fanY = absDiff * 6;
-  const fanZ = diff === 0 ? 30 : diff < 0 ? -18 : -55;
+  const fanZ = diff === 0 ? 28 : diff < 0 ? -20 : -60;
   const fanRotateZ = diff * 8.5;
   const fanScale = Math.max(0.75, 1 - absDiff * 0.06);
 
