@@ -22,6 +22,7 @@ export default function Persistent3DBook({
   targetBookIndex = null,
   transitionProgress = 1.0,
   dragYaw = 0,
+  dragVelocity = 0,
   dimensions = { width: 160, height: 226 },
   onTap,
   onCloseRequest,
@@ -60,6 +61,7 @@ export default function Persistent3DBook({
     animationState,
     transitionProgress,
     dragYaw,
+    dragVelocity,
     dimensions,
   });
 
@@ -184,10 +186,10 @@ export default function Persistent3DBook({
         transition:
           animationState === "repositioning" || animationState === "reversing"
             ? "none"
+            : animationState === "inCollection"
+            ? "none" // Driven at 60fps by requestAnimationFrame / pointer gestures without transition lag
             : isAnyActive
             ? "opacity 0.45s ease"
-            : dragYaw !== 0
-            ? "none"
             : "transform 0.35s ease-out, opacity 0.35s ease-out, filter 0.4s ease",
       }}
       onClick={!isAnyActive ? onTap : undefined}

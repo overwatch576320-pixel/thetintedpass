@@ -46,6 +46,7 @@ export default function MobileBookCollection({
   const [targetBookIndex, setTargetBookIndex] = useState(null);
   const [transitionProgress, setTransitionProgress] = useState(1.0);
   const [dragYaw, setDragYaw] = useState(0);
+  const [dragVelocity, setDragVelocity] = useState(0);
   const [dimensions, setDimensions] = useState(getMobileBookDimensions);
 
   const containerRef = useRef(null);
@@ -77,6 +78,8 @@ export default function MobileBookCollection({
       const start = scrollProgress;
       const startTime = performance.now();
       const change = target - start;
+      const snapVelocity = change < 0 ? -1 : change > 0 ? 1 : 0;
+      setDragVelocity(snapVelocity);
 
       const step = (now) => {
         const elapsed = now - startTime;
@@ -98,6 +101,7 @@ export default function MobileBookCollection({
           setScrollProgress(target);
           setActiveIndex(target);
           setDragYaw(0);
+          setDragVelocity(0);
         }
       };
 
@@ -159,12 +163,15 @@ export default function MobileBookCollection({
     lastXRef.current = e.clientX;
     const instantYaw = Math.max(-13, Math.min(13, currentDeltaX * 1.8));
     setDragYaw(instantYaw);
+    const instantVelocity = currentDeltaX !== 0 ? (currentDeltaX > 0 ? -1 : 1) : 0;
+    setDragVelocity(instantVelocity);
   };
 
   const finishGesture = (e) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     lastXRef.current = 0;
+    setDragVelocity(0);
 
     if (containerRef.current && e?.pointerId) {
       try {
@@ -336,6 +343,7 @@ export default function MobileBookCollection({
             targetBookIndex={targetBookIndex}
             transitionProgress={transitionProgress}
             dragYaw={dragYaw}
+            dragVelocity={dragVelocity}
             dimensions={dimensions}
             onTap={() => handleBookTap(idx)}
             onCloseRequest={handleCloseBook}

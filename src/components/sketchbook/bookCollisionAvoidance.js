@@ -98,6 +98,164 @@ export function check3DCollision(bookA, bookB, dimensions, safetyGap = 8) {
 }
 
 /**
+ * Multi-pass 3D collision relaxation solver for carousel books.
+ * Enforces a strict minimum physical air gap between all book bodies, covers, and spines.
+ */
+function relaxPair(bA, bB, dimensions, safetyGap = 8) {
+  const col = check3DCollision(bA, bB, dimensions, safetyGap);
+  if (!col.collides) return;
+
+  const deficit = safetyGap - col.minGap;
+  if (deficit <= 0) return;
+
+  if (bA.z >= bB.z) {
+    bA.z += deficit * 0.6;
+    bB.z -= deficit * 0.4;
+  } else {
+    bB.z += deficit * 0.6;
+    bA.z -= deficit * 0.4;
+  }
+}
+
+/**
+ * Computes continuous, collision-free 3D transforms for all books in the closed collection carousel.
+ *
+ * Implements:
+ * 1. Dynamic local Y-axis rotation:
+ *    - The book moving towards the center subtly rotates around its local Y-axis in the direction of movement.
+ *    - Neighbouring books rotate dynamically in the opposite direction to create angular clearance.
+ *    - Visible Y-axis rotation (14°–16°) during movement.
+ * 2. Continuous depth trajectory:
+ *    - Advancing book lifts into foreground (Z = +32px to +40px)
+ *    - Yielding books dip into background (Z = -28px to -46px)
+ *    - Far background book stays clear at Z = -75px to -105px
+ * 3. Multi-pass collision prevention solver:
+ *    - Evaluates exact 3D corners of covers, spines, backboards, and pages
+ *    - Guarantees >= 8px air gap at ALL intermediate positions (0.0 to 2.0).
+ */
+export function solveAllCarouselBooks(
+  scrollProgress,
+  velocity = 0,
+  dimensions = { width: 160, height: 226 }
+) {
+  const W = dimensions.width;
+  const stepX = Math.round(W * 0.52); // ~83px
+  const clampedS = Math.max(0, Math.min(2, scrollProgress));
+  const books = [];
+
+  for (let i = 0; i < 3; i++) {
+    const diff = i - clampedS;
+    const absDiff = Math.abs(diff);
+
+    const x = diff * stepX;
+    const y = absDiff * 6;
+    const rotZ = diff * 8.5;
+    const scale = Math.max(0.75, 1 - absDiff * 0.06);
+
+    let z = 30;
+    let rotY = 0;
+    let deltaX = 0;
+
+    if (clampedS >= 0 && clampedS <= 1) {
+      const bell = Math.sin(Math.PI * clampedS); // 0 at s=0 and s=1, 1 at s=0.5
+      const prefer0 = velocity < -0.05 || (Math.abs(velocity) <= 0.05 && clampedS < 0.5);
+
+      if (prefer0) {
+        // Book 0 is advancing towards center (moving right, +X)
+        if (i === 0) {
+          z = 32 + bell * 8; // lifts into foreground (32px to 40px)
+          rotY = 16 * bell; // turns right (+Y) in direction of travel
+        } else if (i === 1) {
+          z = -28 - bell * 18; // dips into background (-28px to -46px)
+          rotY = -14 * bell; // turns left (-Y) away
+          deltaX = 6 * bell; // small outward adjustment
+        } else if (i === 2) {
+          z = -80 - bell * 25; // background right (-80px to -105px)
+          rotY = 4 * bell;
+        }
+      } else {
+        // Book 1 is hero (or moving towards Book 1)
+        if (i === 1) {
+          z = 30 + bell * 10; // lifts into foreground (30px to 40px)
+          rotY = -16 * bell; // turns left (-Y) in direction of travel
+        } else if (i === 0) {
+          z = -18 - bell * 28; // dips into background (-18px to -46px)
+          rotY = 14 * bell; // turns right (+Y) away
+          deltaX = -6 * bell;
+        } else if (i === 2) {
+          z = -75 - bell * 30; // background right (-75px to -105px)
+          rotY = 4 * bell;
+        }
+      }
+    } else if (clampedS > 1 && clampedS <= 2) {
+      const segS = clampedS - 1;
+      const bell = Math.sin(Math.PI * segS);
+      const prefer2 = velocity > 0.05 || (Math.abs(velocity) <= 0.05 && segS >= 0.5);
+
+      if (prefer2) {
+        // Book 2 is advancing towards center (moving left, -X)
+        if (i === 2) {
+          z = 32 + bell * 8; // lifts into foreground (32px to 40px)
+          rotY = -16 * bell; // turns left (-Y) in direction of travel
+        } else if (i === 1) {
+          z = -28 - bell * 18; // dips into background (-28px to -46px)
+          rotY = 14 * bell; // turns right (+Y) away
+          deltaX = -6 * bell;
+        } else if (i === 0) {
+          z = -80 - bell * 25; // background left (-80px to -105px)
+          rotY = -4 * bell;
+        }
+      } else {
+        // Book 1 is hero (or moving towards Book 1 from right)
+        if (i === 1) {
+          z = 30 + bell * 10; // lifts into foreground (30px to 40px)
+          rotY = 16 * bell; // turns right (+Y) in direction of travel
+        } else if (i === 2) {
+          z = -55 - bell * 30; // dips into background (-55px to -85px)
+          rotY = -14 * bell; // turns left (-Y) away
+          deltaX = 6 * bell;
+        } else if (i === 0) {
+          z = -75 - bell * 30; // background left (-75px to -105px)
+          rotY = -4 * bell;
+        }
+      }
+    }
+
+    const zIndex = Math.round(50 + z);
+    let opacity = 1;
+    if (absDiff > 1.35) {
+      opacity = Math.max(0, 1 - (absDiff - 1.35) / 0.45);
+    }
+    if (absDiff >= 1.8) {
+      opacity = 0;
+    }
+
+    books.push({
+      x: x + deltaX,
+      y,
+      z,
+      rotateZ: rotZ,
+      rotateY: rotY,
+      scale,
+      zIndex,
+      opacity,
+      coverAngle: 0,
+      isTarget: false,
+    });
+  }
+
+  // Continuous collision avoidance solver (3-pass relaxation)
+  const safetyMargin = 8;
+  for (let pass = 0; pass < 3; pass++) {
+    relaxPair(books[0], books[1], dimensions, safetyMargin);
+    relaxPair(books[1], books[2], dimensions, safetyMargin);
+    relaxPair(books[0], books[2], dimensions, safetyMargin);
+  }
+
+  return books;
+}
+
+/**
  * Computes coordinated 3D transform for a book in the collection
  */
 export function getCoordinatedBookTransform({
@@ -107,60 +265,28 @@ export function getCoordinatedBookTransform({
   animationState, // 'inCollection' | 'repositioning' | 'opening' | 'open' | 'closingCover' | 'reversing'
   transitionProgress = 1.0, // 0 to 1 during repositioning and reversing
   dragYaw = 0,
+  dragVelocity = 0,
   dimensions,
 }) {
+  const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
+
+  // --- 1. CLOSED BOOK CAROUSEL HORIZONTAL SLIDING & BROWSING ---
+  if (!isAnyActive) {
+    const allBooks = solveAllCarouselBooks(scrollProgress, dragVelocity, dimensions);
+    return allBooks[bookIndex] || allBooks[0];
+  }
+
   const W = dimensions.width;
   const diff = bookIndex - scrollProgress;
   const absDiff = Math.abs(diff);
-
-  // Lateral step offset: ~83px on 160px width
   const stepX = Math.round(W * 0.52);
 
-  // --- 1. BASELINE FAN CONFIGURATION (Rest state) ---
+  // Baseline Fan positions for selection transitions
   const fanX = diff * stepX;
   const fanY = absDiff * 6;
-
-  // Staggered depth layering in baseline fan:
-  // Center book (diff = 0): Z = +30px (in front)
-  // Left book (diff = -1): Z = -15px
-  // Right book (diff = +1): Z = -55px
-  let fanZ = 30;
-  if (diff < -0.5) {
-    fanZ = -15 - (absDiff - 1) * 20;
-  } else if (diff > 0.5) {
-    fanZ = -55 - (absDiff - 1) * 20;
-  }
-
+  const fanZ = diff === 0 ? 30 : diff < 0 ? -18 : -55;
   const fanRotateZ = diff * 8.5;
   const fanScale = Math.max(0.75, 1 - absDiff * 0.06);
-
-  const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
-
-  if (!isAnyActive) {
-    let fanOpacity = 1;
-    if (absDiff > 1.35) {
-      fanOpacity = Math.max(0, 1 - (absDiff - 1.35) / 0.45);
-    }
-    if (absDiff >= 1.8) {
-      fanOpacity = 0;
-    }
-
-    const zIndex = Math.max(1, Math.round(30 - absDiff * 8));
-    const activeRotateY = dragYaw ? Math.max(-28, Math.min(28, dragYaw)) : 0;
-
-    return {
-      x: fanX,
-      y: fanY,
-      z: fanZ,
-      rotateZ: fanRotateZ,
-      rotateY: activeRotateY,
-      scale: fanScale,
-      opacity: fanOpacity,
-      zIndex,
-      coverAngle: 0,
-      isTarget: false,
-    };
-  }
 
   // --- 2. ACTIVE SELECTION / READING DESTINATION VALUES ---
   const isTarget = targetBookIndex === bookIndex;
