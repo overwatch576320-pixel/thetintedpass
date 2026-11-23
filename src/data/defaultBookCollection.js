@@ -8,8 +8,17 @@
  * 5. Likir Tibetan Turquoise (#135460)
  *
  * Each book maintains its own independent page structure, page count, and state.
- * Currently initialized with clean, warm off-white blank pages ready for future content.
+ * Initialized with clean, warm off-white blank pages ready for future content.
  */
+
+function createBlankPages(count = 8) {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `folio-${i + 1}`,
+    pageNumber: i + 1,
+    isBlank: true,
+    published: true,
+  }));
+}
 
 export const DEFAULT_BOOK_COLLECTION = [
   {
@@ -20,15 +29,9 @@ export const DEFAULT_BOOK_COLLECTION = [
     coverColor: "#1b3358", // Deep Himalayan Lapis Lazuli
     edgeColor: "#0f1e33",
     paperColor: "#fbf8f0",
-    pageCount: 6,
-    pages: [
-      { id: "b1-p1", pageNumber: 1, isBlank: true, published: true },
-      { id: "b1-p2", pageNumber: 2, isBlank: true, published: true },
-      { id: "b1-p3", pageNumber: 3, isBlank: true, published: true },
-      { id: "b1-p4", pageNumber: 4, isBlank: true, published: true },
-      { id: "b1-p5", pageNumber: 5, isBlank: true, published: true },
-      { id: "b1-p6", pageNumber: 6, isBlank: true, published: true },
-    ],
+    coverImage: "/editorial/sketchbook-a4-cover.jpg",
+    pageCount: 8,
+    pages: createBlankPages(8),
   },
   {
     id: "book-2",
@@ -38,15 +41,9 @@ export const DEFAULT_BOOK_COLLECTION = [
     coverColor: "#1c2328", // Deep Obsidian Slate
     edgeColor: "#101417",
     paperColor: "#fbf8f0",
-    pageCount: 6,
-    pages: [
-      { id: "b2-p1", pageNumber: 1, isBlank: true, published: true },
-      { id: "b2-p2", pageNumber: 2, isBlank: true, published: true },
-      { id: "b2-p3", pageNumber: 3, isBlank: true, published: true },
-      { id: "b2-p4", pageNumber: 4, isBlank: true, published: true },
-      { id: "b2-p5", pageNumber: 5, isBlank: true, published: true },
-      { id: "b2-p6", pageNumber: 6, isBlank: true, published: true },
-    ],
+    coverImage: "/editorial/sketchbook-a4-cover.jpg",
+    pageCount: 8,
+    pages: createBlankPages(8),
   },
   {
     id: "book-3",
@@ -56,15 +53,9 @@ export const DEFAULT_BOOK_COLLECTION = [
     coverColor: "#8f3d2a", // Monastic Terra Cotta / Raw Ochre
     edgeColor: "#592418",
     paperColor: "#fbf8f0",
-    pageCount: 6,
-    pages: [
-      { id: "b3-p1", pageNumber: 1, isBlank: true, published: true },
-      { id: "b3-p2", pageNumber: 2, isBlank: true, published: true },
-      { id: "b3-p3", pageNumber: 3, isBlank: true, published: true },
-      { id: "b3-p4", pageNumber: 4, isBlank: true, published: true },
-      { id: "b3-p5", pageNumber: 5, isBlank: true, published: true },
-      { id: "b3-p6", pageNumber: 6, isBlank: true, published: true },
-    ],
+    coverImage: "/editorial/sketchbook-a4-cover.jpg",
+    pageCount: 8,
+    pages: createBlankPages(8),
   },
   {
     id: "book-4",
@@ -74,15 +65,9 @@ export const DEFAULT_BOOK_COLLECTION = [
     coverColor: "#1e382b", // Himalayan Juniper / Pine
     edgeColor: "#102118",
     paperColor: "#fbf8f0",
-    pageCount: 6,
-    pages: [
-      { id: "b4-p1", pageNumber: 1, isBlank: true, published: true },
-      { id: "b4-p2", pageNumber: 2, isBlank: true, published: true },
-      { id: "b4-p3", pageNumber: 3, isBlank: true, published: true },
-      { id: "b4-p4", pageNumber: 4, isBlank: true, published: true },
-      { id: "b4-p5", pageNumber: 5, isBlank: true, published: true },
-      { id: "b4-p6", pageNumber: 6, isBlank: true, published: true },
-    ],
+    coverImage: "/editorial/sketchbook-a4-cover.jpg",
+    pageCount: 8,
+    pages: createBlankPages(8),
   },
   {
     id: "book-5",
@@ -92,14 +77,8 @@ export const DEFAULT_BOOK_COLLECTION = [
     coverColor: "#135460", // Deep Tibetan Turquoise
     edgeColor: "#0b3138",
     paperColor: "#fbf8f0",
-    pageCount: 6,
-    pages: [
-      { id: "b5-p1", pageNumber: 1, isBlank: true, published: true },
-      { id: "b5-p2", pageNumber: 2, isBlank: true, published: true },
-      { id: "b5-p3", pageNumber: 3, isBlank: true, published: true },
-      { id: "b5-p4", pageNumber: 4, isBlank: true, published: true },
-      { id: "b5-p5", pageNumber: 5, isBlank: true, published: true },
-      { id: "b5-p6", pageNumber: 6, isBlank: true, published: true },
-    ],
+    coverImage: "/editorial/sketchbook-a4-cover.jpg",
+    pageCount: 8,
+    pages: createBlankPages(8),
   },
 ];
