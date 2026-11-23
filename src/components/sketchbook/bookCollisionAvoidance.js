@@ -5,19 +5,9 @@
  * local Z-axis rotation, and 3D collision avoidance
  * for the 3-book mobile collection on The Tinted Pass.
  *
- * Core Principles:
- * 1. Controlled dynamic local Y-axis rotation during horizontal movement:
- *    - Moving left: pivots around local Y in one direction (negative angle).
- *    - Moving right: pivots around local Y in opposite direction (positive angle).
- *    - As movement slows and reaches destination, Y-axis rotation returns to 0°.
- *    - Movement feels like a natural physical pivot, revealing authentic 3D book thickness.
- * 2. Preserves existing local Z-axis behaviour:
- *    - Selected book straightens to 0°.
- *    - Neighbouring books tilt away to create clearance.
- *    - Outward position adjustments prevent intersection.
- * 3. 3D depth staggering:
- *    - Center book (+30px), Left book (-15px), Right book (-55px) in baseline fan.
- *    - Guaranteed positive safety gap across entire motion path.
+ * Diagnostic settings:
+ * - Visually exaggerated Y-axis rotation (~25°–30°) during movement
+ * - Forward-arc depth trajectory (eliminates 3D clipping & polygon intersection)
  */
 
 function easeInOutCubic(t) {
@@ -56,8 +46,7 @@ export function get3DBookCorners(x, y, z, rotateZ_deg, rotateY_deg, W, H, D = 22
 }
 
 /**
- * Evaluates 3D Collision and Safety Gap between two books taking into account
- * both Z-axis rotation and dynamic Y-axis rotation.
+ * Evaluates 3D Collision and Safety Gap between two books
  */
 export function check3DCollision(bookA, bookB, dimensions, safetyGap = 8) {
   const W = dimensions.width;
@@ -85,14 +74,12 @@ export function check3DCollision(bookA, bookB, dimensions, safetyGap = 8) {
     D
   );
 
-  // Depth interval along world Z
   const minZA = Math.min(...cornersA.map((c) => c.z));
   const maxZA = Math.max(...cornersA.map((c) => c.z));
   const minZB = Math.min(...cornersB.map((c) => c.z));
   const maxZB = Math.max(...cornersB.map((c) => c.z));
   const zClearance = Math.max(minZB - maxZA, minZA - maxZB);
 
-  // Lateral interval along world X
   const minXA = Math.min(...cornersA.map((c) => c.x));
   const maxXA = Math.max(...cornersA.map((c) => c.x));
   const minXB = Math.min(...cornersB.map((c) => c.x));
@@ -111,9 +98,7 @@ export function check3DCollision(bookA, bookB, dimensions, safetyGap = 8) {
 }
 
 /**
- * Computes coordinated 3D transform for a book in the collection,
- * incorporating dynamic local Z-axis rotation, movement-responsive local Y-axis rotation,
- * and 3D collision avoidance.
+ * Computes coordinated 3D transform for a book in the collection
  */
 export function getCoordinatedBookTransform({
   bookIndex,
@@ -121,7 +106,7 @@ export function getCoordinatedBookTransform({
   targetBookIndex,
   animationState, // 'inCollection' | 'repositioning' | 'opening' | 'open' | 'closingCover' | 'reversing'
   transitionProgress = 1.0, // 0 to 1 during repositioning and reversing
-  dragYaw = 0, // dynamic Y-rotation during swipe / drag
+  dragYaw = 0,
   dimensions,
 }) {
   const W = dimensions.width;
@@ -131,11 +116,11 @@ export function getCoordinatedBookTransform({
   // Lateral step offset: ~83px on 160px width
   const stepX = Math.round(W * 0.52);
 
-  // --- 1. BASELINE FAN CONFIGURATION (inCollection rest state) ---
+  // --- 1. BASELINE FAN CONFIGURATION (Rest state) ---
   const fanX = diff * stepX;
   const fanY = absDiff * 6;
 
-  // Staggered depth layering:
+  // Staggered depth layering in baseline fan:
   // Center book (diff = 0): Z = +30px (in front)
   // Left book (diff = -1): Z = -15px
   // Right book (diff = +1): Z = -55px
@@ -146,11 +131,9 @@ export function getCoordinatedBookTransform({
     fanZ = -55 - (absDiff - 1) * 20;
   }
 
-  // Local Z-axis rotation in fanned rest state
   const fanRotateZ = diff * 8.5;
   const fanScale = Math.max(0.75, 1 - absDiff * 0.06);
 
-  // If resting in collection (no book selected):
   const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
 
   if (!isAnyActive) {
@@ -163,12 +146,7 @@ export function getCoordinatedBookTransform({
     }
 
     const zIndex = Math.max(1, Math.round(30 - absDiff * 8));
-
-    // Dynamic Y-axis rotation during horizontal swipe/drag:
-    // When dragging left (content moving left), books pivot left (dragYaw < 0).
-    // When dragging right (content moving right), books pivot right (dragYaw > 0).
-    // When settled, dragYaw = 0.
-    const activeRotateY = dragYaw ? Math.max(-14, Math.min(14, dragYaw)) : 0;
+    const activeRotateY = dragYaw ? Math.max(-28, Math.min(28, dragYaw)) : 0;
 
     return {
       x: fanX,
@@ -186,91 +164,90 @@ export function getCoordinatedBookTransform({
 
   // --- 2. ACTIVE SELECTION / READING DESTINATION VALUES ---
   const isTarget = targetBookIndex === bookIndex;
-  const targetDiff = targetBookIndex - scrollProgress; // -1 = left, 0 = center, +1 = right
+  const targetDiff = targetBookIndex - scrollProgress;
   const distanceToTarget = bookIndex - targetBookIndex;
 
-  // Final reading position for the selected book (spine at screen center)
+  // Reading position for selected book (spine centered at screen X = W/2)
   const destReadingX = W / 2;
   const destReadingY = -8;
   const destReadingZ = 75; // prominently in foreground
   const destReadingRotateZ = 0; // completely straightened
   const destReadingScale = 1.0;
 
-  // Final clearance offsets for neighbouring books:
+  // Final clearance offsets and peak movement yaw angles:
   let destClearDeltaX = 0;
   let destClearDeltaY = 0;
   let destClearDeltaZ = 0;
   let destClearDeltaRotateZ = 0;
-  let peakMovementYaw = 0; // Peak Y-axis rotation angle during horizontal movement
+  let peakMovementYaw = 0;
 
   if (!isTarget) {
     if (Math.round(targetDiff) === 0) {
-      // --- CENTER BOOK SELECTED (moves right by +80px) ---
+      // --- CENTER BOOK SELECTED (moving right +80px) ---
       if (distanceToTarget < 0) {
-        // Left book (book 0): shifts left (-12px)
-        destClearDeltaX = -12;
-        destClearDeltaY = 4;
-        destClearDeltaZ = -15; // drops to -30px
-        destClearDeltaRotateZ = -3.0; // tilts outward to -11.5°
-        peakMovementYaw = -5.0; // turns left during leftward travel
-      } else {
-        // Right book (book 2): shifts right (+29px)
-        destClearDeltaX = 29;
-        destClearDeltaY = 4;
-        destClearDeltaZ = -18; // drops to -73px
-        destClearDeltaRotateZ = 4.5; // tilts outward to +13.0°
-        peakMovementYaw = +8.0; // turns right during rightward travel
-      }
-    } else if (Math.round(targetDiff) < 0) {
-      // --- LEFT BOOK SELECTED (sweeps right by +163px) ---
-      if (Math.round(diff) === 0) {
-        // Center book (book 1): shifts left (-26px) and steps back
-        destClearDeltaX = -26;
-        destClearDeltaY = 8;
-        destClearDeltaZ = -55; // drops to -25px
-        destClearDeltaRotateZ = 6.5; // tilts clockwise away to +6.5°
-        peakMovementYaw = -7.0; // turns left during leftward travel
-      } else if (Math.round(diff) > 0) {
-        // Right book (book 2): shifts right (+27px)
-        destClearDeltaX = 27;
-        destClearDeltaY = 4;
-        destClearDeltaZ = -20; // drops to -75px
-        destClearDeltaRotateZ = 4.0; // tilts outward to +12.5°
-        peakMovementYaw = +7.0; // turns right during rightward travel
-      }
-    } else {
-      // --- RIGHT BOOK SELECTED (elevates to foreground) ---
-      if (Math.round(diff) === 0) {
-        // Center book (book 1): shifts left (-26px)
-        destClearDeltaX = -26;
-        destClearDeltaY = 8;
-        destClearDeltaZ = -40; // drops to -10px
-        destClearDeltaRotateZ = -6.5; // tilts counter-clockwise away to -6.5°
-        peakMovementYaw = -7.5; // turns left during leftward travel
-      } else if (Math.round(diff) < 0) {
-        // Left book (book 0): shifts further left (-22px)
-        destClearDeltaX = -22;
+        // Left book: shifts left
+        destClearDeltaX = -14;
         destClearDeltaY = 4;
         destClearDeltaZ = -20; // drops to -35px
+        destClearDeltaRotateZ = -3.0; // tilts outward to -11.5°
+        peakMovementYaw = -16.0; // pivots left during leftward travel
+      } else {
+        // Right book: shifts right
+        destClearDeltaX = 32;
+        destClearDeltaY = 4;
+        destClearDeltaZ = -25; // drops to -80px
+        destClearDeltaRotateZ = 4.5; // tilts outward to +13.0°
+        peakMovementYaw = +18.0; // pivots right during rightward travel
+      }
+    } else if (Math.round(targetDiff) < 0) {
+      // --- LEFT BOOK SELECTED (sweeping right +163px) ---
+      if (Math.round(diff) === 0) {
+        // Center book: shifts left and steps back into background
+        destClearDeltaX = -28;
+        destClearDeltaY = 8;
+        destClearDeltaZ = -60; // drops to -30px
+        destClearDeltaRotateZ = 6.5; // tilts clockwise away to +6.5°
+        peakMovementYaw = -18.0; // pivots left during leftward travel
+      } else if (Math.round(diff) > 0) {
+        // Right book: shifts right
+        destClearDeltaX = 28;
+        destClearDeltaY = 4;
+        destClearDeltaZ = -25; // drops to -80px
+        destClearDeltaRotateZ = 4.0; // tilts outward to +12.5°
+        peakMovementYaw = +16.0; // pivots right during rightward travel
+      }
+    } else {
+      // --- RIGHT BOOK SELECTED ---
+      if (Math.round(diff) === 0) {
+        // Center book: shifts left
+        destClearDeltaX = -28;
+        destClearDeltaY = 8;
+        destClearDeltaZ = -45; // drops to -15px
+        destClearDeltaRotateZ = -6.5; // tilts counter-clockwise away to -6.5°
+        peakMovementYaw = -18.0; // pivots left during leftward travel
+      } else if (Math.round(diff) < 0) {
+        // Left book: shifts further left
+        destClearDeltaX = -24;
+        destClearDeltaY = 4;
+        destClearDeltaZ = -25; // drops to -40px
         destClearDeltaRotateZ = -3.5; // tilts outward to -12.0°
-        peakMovementYaw = -6.0; // turns left during leftward travel
+        peakMovementYaw = -15.0; // pivots left during leftward travel
       }
     }
   } else {
-    // SELECTED BOOK PEAK YAW:
+    // SELECTED BOOK PEAK YAW (Diagnostic Exaggeration: 26°–28°):
     if (Math.round(targetDiff) === 0) {
-      // Center book moves right from 0 to +80px (+80px displacement)
-      peakMovementYaw = +11.5; // turns right during rightward travel
+      // Center book travels right from 0 to +80px
+      peakMovementYaw = +28.0; // clearly pivots right during rightward movement!
     } else if (Math.round(targetDiff) < 0) {
-      // Left book sweeps right from -83px to +80px (+163px displacement)
-      peakMovementYaw = +12.0; // turns right during rightward travel
+      // Left book sweeps right from -83px to +80px
+      peakMovementYaw = +30.0; // clearly pivots right during rightward movement!
     } else {
-      // Right book moves from +83px to +80px (slight left pivot)
-      peakMovementYaw = -6.0; // subtle leftward turn
+      // Right book moves from +83px to +80px
+      peakMovementYaw = -18.0; // pivots leftward towards center
     }
   }
 
-  // End / Settled coordinates for this book in active state
   const destX = isTarget ? destReadingX : fanX + destClearDeltaX;
   const destY = isTarget ? destReadingY : fanY + destClearDeltaY;
   const destZ = isTarget ? destReadingZ : fanZ + destClearDeltaZ;
@@ -278,48 +255,44 @@ export function getCoordinatedBookTransform({
   const destScale = isTarget ? destReadingScale : fanScale;
 
   // --- 3. DYNAMIC PROGRESS & MOVEMENT-RESPONSIVE Y-AXIS ROTATION ---
-  // Clamp progress between 0 and 1
   const t = Math.max(0, Math.min(1, transitionProgress));
   const p = easeInOutCubic(t);
 
-  // The bell curve: 0 at start (t=0), peaks around t=0.45, returns to 0 at destination (t=1.0)
-  // When reversing back to collection, movement direction is reversed:
+  // Bell curve: 0 at start (t=0), peaks at t=0.45, returns to 0 at destination (t=1.0)
   const isReversing = animationState === "reversing";
   const yawMultiplier = isReversing ? -1 : 1;
   const yawBell = Math.sin(Math.PI * Math.pow(t, 0.92));
   const currentRotateY = peakMovementYaw * yawBell * yawMultiplier;
 
-  // Instantaneous spatial coordinates along the motion trajectory:
+  // Instantaneous spatial coordinates:
   let currentX, currentY, currentZ, currentRotateZ, currentScale;
 
   if (animationState === "repositioning") {
-    // Travel from Fan -> Active
     currentX = fanX + (destX - fanX) * p;
     currentY = fanY + (destY - fanY) * p;
     currentRotateZ = fanRotateZ + (destRotateZ - fanRotateZ) * p;
     currentScale = fanScale + (destScale - fanScale) * p;
 
-    // Depth curve:
+    // Forward-Arc Depth Trajectory:
+    // Ensures books never slice or intersect in 3D during depth transitions!
     if (isTarget && targetBookIndex === 0) {
-      // Left book elevates early to foreground to glide cleanly in front
-      const earlyLift = Math.min(1, t * 1.5);
+      // Left book lifts into foreground early (by t=0.5 it is already at Z=+75px)
+      const earlyLift = Math.min(1, t * 1.8);
       currentZ = fanZ + (destZ - fanZ) * easeInOutCubic(earlyLift);
     } else if (!isTarget && targetBookIndex === 0 && bookIndex === 1) {
-      // Center book drops back early when Left book advances
-      const earlyDrop = Math.min(1, t * 1.5);
+      // Center book steps back into background early (by t=0.5 it is already at Z=-30px)
+      const earlyDrop = Math.min(1, t * 1.8);
       currentZ = fanZ + (destZ - fanZ) * easeInOutCubic(earlyDrop);
     } else {
       currentZ = fanZ + (destZ - fanZ) * p;
     }
   } else if (animationState === "reversing") {
-    // Travel in reverse: Active -> Fan (t goes 1 -> 0, or we run t 0 -> 1 with reverse interpolation)
     currentX = destX + (fanX - destX) * p;
     currentY = destY + (fanY - destY) * p;
     currentZ = destZ + (fanZ - destZ) * p;
     currentRotateZ = destRotateZ + (fanRotateZ - destRotateZ) * p;
     currentScale = destScale + (fanScale - destScale) * p;
   } else {
-    // 'opening', 'open', 'closingCover' (settled in active reading positions, rotateY = 0°)
     currentX = destX;
     currentY = destY;
     currentZ = destZ;
@@ -327,12 +300,11 @@ export function getCoordinatedBookTransform({
     currentScale = destScale;
   }
 
-  // Stacking z-index: Selected book on top, then center slot, then sides
+  // Stacking z-index: Selected book on top
   const zIndex = isTarget
     ? 100
     : Math.max(1, Math.round(20 - Math.abs(distanceToTarget) * 5));
 
-  // Opacity: Side books remain visible in clearance positions
   let opacity = 1;
   if (!isTarget) {
     if (animationState === "open" || animationState === "opening") {
@@ -342,7 +314,6 @@ export function getCoordinatedBookTransform({
     }
   }
 
-  // Cover opening angle: 0° when closed/repositioning, -180° when opening/open
   let coverAngle = 0;
   if (isTarget) {
     if (animationState === "opening" || animationState === "open") {

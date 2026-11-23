@@ -222,11 +222,11 @@ export default function MobileBookCollection({
     setTransitionProgress(0);
     if (onOpenBook) onOpenBook(collection[index]);
 
-    // 2. Step 1: Smooth 620ms Repositioning driven via requestAnimationFrame
-    // Books dynamically turn sideways around their local Y-axis during horizontal movement,
+    // 2. Step 1: Smooth 2000ms diagnostic repositioning driven via requestAnimationFrame
+    // Books dynamically turn sideways around their local Y-axis during horizontal movement (exaggerated to 25°-30°),
     // peaking mid-flight and gradually straightening to 0° as they reach destination!
     const startTime = performance.now();
-    const duration = 620;
+    const duration = 2000;
 
     const step = (now) => {
       const elapsed = now - startTime;
@@ -266,7 +266,7 @@ export default function MobileBookCollection({
       // Turning sideways around Y in reverse travel direction, straightening to 0° upon arrival
       setAnimationState("reversing");
       const startTime = performance.now();
-      const duration = 620;
+      const duration = 2000;
 
       const step = (now) => {
         const elapsed = now - startTime;
