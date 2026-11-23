@@ -41,19 +41,23 @@ export default function MobileBookCollection({
     Math.min(maxIndex, Math.max(0, initialIndex))
   );
 
-  // Animation State: 'inCollection' | 'opening' | 'open' | 'closing'
+  // Animation State: 'inCollection' | 'opening' | 'open' | 'closingCover' | 'reversing' | 'repositioning'
   const [animationState, setAnimationState] = useState("inCollection");
   const [targetBookIndex, setTargetBookIndex] = useState(null);
+  const [transitionProgress, setTransitionProgress] = useState(1.0);
+  const [dragYaw, setDragYaw] = useState(0);
   const [dimensions, setDimensions] = useState(getMobileBookDimensions);
 
   const containerRef = useRef(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
+  const lastXRef = useRef(0);
   const startTimeRef = useRef(0);
   const startProgressRef = useRef(0);
   const hasMovedRef = useRef(false);
   const scrollAnimRef = useRef(null);
+  const repositionAnimRef = useRef(null);
   const openTimerRef = useRef(null);
   const closeTimerRef = useRef(null);
 
@@ -66,7 +70,7 @@ export default function MobileBookCollection({
 
   const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
-  // Smooth scroll along the collection fan
+  // Smooth scroll along the collection fan with dynamic movement-responsive yaw
   const animateScrollTo = useCallback(
     (target, duration = 360) => {
       cancelAnimationFrame(scrollAnimRef.current);
@@ -80,11 +84,20 @@ export default function MobileBookCollection({
         const current = start + change * easeOutCubic(t);
         setScrollProgress(current);
 
+        // Movement-responsive dynamic Y-axis rotation during snap travel
+        // When moving right (target < start, change < 0): turns sideways right (+yaw)
+        // When moving left (target > start, change > 0): turns sideways left (-yaw)
+        const snapDirection = change > 0 ? -1 : 1;
+        const snapMagnitude = Math.min(1, Math.abs(change));
+        const snapBell = Math.sin(Math.PI * t);
+        setDragYaw(snapDirection * snapMagnitude * 10 * snapBell);
+
         if (t < 1) {
           scrollAnimRef.current = requestAnimationFrame(step);
         } else {
           setScrollProgress(target);
           setActiveIndex(target);
+          setDragYaw(0);
         }
       };
 
@@ -99,8 +112,10 @@ export default function MobileBookCollection({
     if (e.button !== 0 && e.pointerType === "mouse") return;
 
     cancelAnimationFrame(scrollAnimRef.current);
+    cancelAnimationFrame(repositionAnimRef.current);
     isDraggingRef.current = true;
     startXRef.current = e.clientX;
+    lastXRef.current = e.clientX;
     startYRef.current = e.clientY;
     startTimeRef.current = performance.now();
     startProgressRef.current = scrollProgress;
@@ -136,11 +151,20 @@ export default function MobileBookCollection({
     }
 
     setScrollProgress(newProgress);
+
+    // Movement-responsive dynamic Y-axis rotation during active dragging:
+    // Dragging right (content moves right) -> positive Y-rotation (+yaw)
+    // Dragging left (content moves left) -> negative Y-rotation (-yaw)
+    const currentDeltaX = e.clientX - (lastXRef.current || startXRef.current);
+    lastXRef.current = e.clientX;
+    const instantYaw = Math.max(-13, Math.min(13, currentDeltaX * 1.8));
+    setDragYaw(instantYaw);
   };
 
   const finishGesture = (e) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    lastXRef.current = 0;
 
     if (containerRef.current && e?.pointerId) {
       try {
@@ -154,6 +178,7 @@ export default function MobileBookCollection({
 
     // If tap without drag, let handleBookTap execute immediately
     if (!hasMovedRef.current || Math.abs(dx) < 7) {
+      setDragYaw(0);
       setTimeout(() => {
         hasMovedRef.current = false;
       }, 50);
@@ -181,37 +206,54 @@ export default function MobileBookCollection({
   const handlePointerUp = (e) => finishGesture(e);
   const handlePointerCancel = (e) => finishGesture(e);
 
-  // --- COORDINATED SELECTION & COLLISION-AWARE REPOSITIONING ---
+  // --- COORDINATED SELECTION & MOVEMENT-RESPONSIVE YAW ANIMATION ---
   const handleBookTap = (index) => {
     if (animationState !== "inCollection" || hasMovedRef.current) return;
 
     cancelAnimationFrame(scrollAnimRef.current);
+    cancelAnimationFrame(repositionAnimRef.current);
     clearTimeout(openTimerRef.current);
     clearTimeout(closeTimerRef.current);
 
     // 1. Immediately designate this tapped book as the target
     setTargetBookIndex(index);
-
-    // 2. Step 1: Coordinated repositioning and dynamic local Z-axis rotation (~620ms)
-    // All 3 books adjust positions and local Z-rotations according to proximity and movement
+    setDragYaw(0);
     setAnimationState("repositioning");
+    setTransitionProgress(0);
     if (onOpenBook) onOpenBook(collection[index]);
 
-    // 3. Step 2: Once the selected book reaches its central position, begin book-opening (~620ms)
-    openTimerRef.current = setTimeout(() => {
-      setAnimationState("opening");
+    // 2. Step 1: Smooth 620ms Repositioning driven via requestAnimationFrame
+    // Books dynamically turn sideways around their local Y-axis during horizontal movement,
+    // peaking mid-flight and gradually straightening to 0° as they reach destination!
+    const startTime = performance.now();
+    const duration = 620;
 
-      // 4. Step 3: Settle into open double-page spread
-      openTimerRef.current = setTimeout(() => {
-        setAnimationState("open");
-      }, 640);
-    }, 620);
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / duration);
+      setTransitionProgress(t);
+
+      if (t < 1) {
+        repositionAnimRef.current = requestAnimationFrame(step);
+      } else {
+        setTransitionProgress(1.0);
+        // 3. Step 2: Once books settle with Y-rotation = 0°, swing front cover open
+        setAnimationState("opening");
+
+        openTimerRef.current = setTimeout(() => {
+          setAnimationState("open");
+        }, 640);
+      }
+    };
+
+    repositionAnimRef.current = requestAnimationFrame(step);
   };
 
   // --- REVERSE ANIMATION SEQUENCE ---
   const handleCloseBook = () => {
     if (animationState !== "open" && animationState !== "opening") return;
 
+    cancelAnimationFrame(repositionAnimRef.current);
     clearTimeout(openTimerRef.current);
     clearTimeout(closeTimerRef.current);
 
@@ -220,14 +262,27 @@ export default function MobileBookCollection({
     if (onCloseBook) onCloseBook();
 
     closeTimerRef.current = setTimeout(() => {
-      // 2. Coordinated reverse of all 3 books to original fan positions and rotations (~620ms)
+      // 2. Coordinated reverse of all 3 books to original fan positions and rotations
+      // Turning sideways around Y in reverse travel direction, straightening to 0° upon arrival
       setAnimationState("reversing");
+      const startTime = performance.now();
+      const duration = 620;
 
-      closeTimerRef.current = setTimeout(() => {
-        // 3. Settled back into collection
-        setAnimationState("inCollection");
-        setTargetBookIndex(null);
-      }, 640);
+      const step = (now) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / duration);
+        setTransitionProgress(t);
+
+        if (t < 1) {
+          repositionAnimRef.current = requestAnimationFrame(step);
+        } else {
+          setTransitionProgress(0);
+          setAnimationState("inCollection");
+          setTargetBookIndex(null);
+        }
+      };
+
+      repositionAnimRef.current = requestAnimationFrame(step);
     }, 500);
   };
 
@@ -279,6 +334,8 @@ export default function MobileBookCollection({
             scrollProgress={scrollProgress}
             animationState={animationState}
             targetBookIndex={targetBookIndex}
+            transitionProgress={transitionProgress}
+            dragYaw={dragYaw}
             dimensions={dimensions}
             onTap={() => handleBookTap(idx)}
             onCloseRequest={handleCloseBook}

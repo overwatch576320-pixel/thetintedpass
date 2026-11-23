@@ -20,6 +20,8 @@ export default function Persistent3DBook({
   scrollProgress,
   animationState = "inCollection",
   targetBookIndex = null,
+  transitionProgress = 1.0,
+  dragYaw = 0,
   dimensions = { width: 160, height: 226 },
   onTap,
   onCloseRequest,
@@ -50,12 +52,14 @@ export default function Persistent3DBook({
     }
   }, [animationState]);
 
-  // Compute coordinated 3D transform with dynamic local Z-axis rotation and collision avoidance
+  // Compute coordinated 3D transform with dynamic local Z-axis rotation, movement-responsive Y-axis rotation, and collision avoidance
   const bookTransform = getCoordinatedBookTransform({
     bookIndex,
     scrollProgress,
     targetBookIndex,
     animationState,
+    transitionProgress,
+    dragYaw,
     dimensions,
   });
 
@@ -177,9 +181,14 @@ export default function Persistent3DBook({
         opacity: currentOpacity,
         pointerEvents: isTargetBook ? "auto" : absDiff < 1.35 && !isAnyActive ? "auto" : "none",
         transform: `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, ${currentZ.toFixed(2)}px) rotateZ(${currentRotateZ.toFixed(2)}deg) rotateY(${currentRotateY.toFixed(2)}deg) scale(${currentScale.toFixed(3)})`,
-        transition: isAnyActive
-          ? "transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease"
-          : "transform 0.35s ease-out, opacity 0.35s ease-out, filter 0.4s ease",
+        transition:
+          animationState === "repositioning" || animationState === "reversing"
+            ? "none"
+            : isAnyActive
+            ? "opacity 0.45s ease"
+            : dragYaw !== 0
+            ? "none"
+            : "transform 0.35s ease-out, opacity 0.35s ease-out, filter 0.4s ease",
       }}
       onClick={!isAnyActive ? onTap : undefined}
       role="button"
