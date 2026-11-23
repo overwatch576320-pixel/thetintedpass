@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { getCoordinatedBookTransform } from "./bookCollisionAvoidance";
 import "./sketchbook.css";
 
 /**
@@ -7,9 +8,11 @@ import "./sketchbook.css";
  *
  * It remains the EXACT SAME physical object across:
  * - 'inCollection': fanned upright in the 3-book mobile arrangement.
- * - 'opening': immediately lifts forward to reading position while front cover rotates -180°.
+ * - 'repositioning': coordinated dynamic local Z-axis rotation & collision avoidance.
+ * - 'opening': front cover leaf swings open outward (-180°).
  * - 'open': double-page cotton rag spread with gesture-driven page turning.
- * - 'closing': cover folds shut and book smoothly settles back into its fanned slot.
+ * - 'closingCover': front cover swings shut (0°).
+ * - 'reversing': smooth coordinated return to original fanned slots without collision.
  */
 export default function Persistent3DBook({
   book,
@@ -36,81 +39,47 @@ export default function Persistent3DBook({
 
   // Reset spread to 1 when book closes or returns to collection
   useEffect(() => {
-    if (animationState === "inCollection" || animationState === "closing") {
+    if (
+      animationState === "inCollection" ||
+      animationState === "closingCover" ||
+      animationState === "reversing"
+    ) {
       setCurrentSpread(1);
       setDragProgress(0);
       setIsDraggingLeaf(false);
     }
   }, [animationState]);
 
-  // Compute 3-book fanned arrangement coordinates
+  // Compute coordinated 3D transform with dynamic local Z-axis rotation and collision avoidance
+  const bookTransform = getCoordinatedBookTransform({
+    bookIndex,
+    scrollProgress,
+    targetBookIndex,
+    animationState,
+    dimensions,
+  });
+
+  const {
+    x: currentX,
+    y: currentY,
+    z: currentZ,
+    rotateZ: currentRotateZ,
+    rotateY: currentRotateY,
+    scale: currentScale,
+    opacity: currentOpacity,
+    zIndex,
+    coverAngle,
+    isTarget: isTargetBook,
+  } = bookTransform;
+
   const diff = bookIndex - scrollProgress;
   const absDiff = Math.abs(diff);
 
-  const isTargetBook = targetBookIndex === bookIndex;
-  const isOpeningOrOpen = (animationState === "opening" || animationState === "open") && isTargetBook;
-  const isClosing = animationState === "closing" && isTargetBook;
-  const isAnyActive = (animationState === "opening" || animationState === "open" || animationState === "closing") && targetBookIndex !== null;
+  const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
   const isBackgroundBook = isAnyActive && !isTargetBook;
-
-  // --- FAN POSITIONING (Zero 3D Intersection, Zero Distortion) ---
-  // Lateral step offset: ~70px between books on 390px screens
-  const stepX = W * 0.44;
-  const fanX = diff * stepX;
-  // Natural downward curvature for side books
-  const fanY = absDiff * 6;
-  // 3D Depth separation:
-  // Center book (absDiff === 0): Z = +30px (prominently in front)
-  // Side books (absDiff > 0): Z = -30px (recessed behind by 60px!)
-  // This physically separates bounding planes along Z, preventing polygon clipping and z-fighting.
-  const fanZ = absDiff === 0 ? 30 : -30 - (absDiff - 1) * 35;
-  // Gentle fan rotation: -8.5deg on left, +8.5deg on right
-  const fanRotateZ = diff * 8.5;
-  // Controlled Y rotation: faces slightly toward viewer
-  const fanRotateY = -diff * 5.0;
-  // Scale stepping: 1.0 at center, 0.94 at sides
-  const fanScale = Math.max(0.75, 1 - absDiff * 0.06);
-
-  // Stacking z-index: center is highest, side books tucked behind
-  const zIndex = isTargetBook
-    ? 100
-    : isBackgroundBook
-    ? Math.max(1, Math.round(10 - absDiff * 2))
-    : Math.max(1, Math.round(30 - absDiff * 8));
-
-  // Opacity: Center and 2 side books are 100% full opacity in collection
-  let fanOpacity = 1;
-  if (absDiff > 1.35) {
-    fanOpacity = Math.max(0, 1 - (absDiff - 1.35) / 0.45);
-  }
-  if (absDiff >= 1.8) {
-    fanOpacity = 0;
-  }
-
-  // --- TRANSFORMATION STATE (Fanned vs Reading) ---
-  // When opening or open: shift X by W/2 so the spine is at screen center,
-  // making the 2W wide double-page spread perfectly centered on mobile!
-  const currentX = isTargetBook && (isOpeningOrOpen || isClosing) ? W / 2 : fanX;
-  const currentY = isTargetBook && (isOpeningOrOpen || isClosing) ? -8 : fanY;
-  const currentZ = isTargetBook && (isOpeningOrOpen || isClosing) ? 75 : fanZ;
-  const currentRotateZ = isTargetBook && (isOpeningOrOpen || isClosing) ? 0 : fanRotateZ;
-  const currentRotateY = isTargetBook && (isOpeningOrOpen || isClosing) ? 0 : fanRotateY;
-  const currentScale = isTargetBook && (isOpeningOrOpen || isClosing) ? 1.0 : fanScale;
-
-  // Background books fade out completely when any book is opening or open
-  const currentOpacity = isBackgroundBook ? 0 : isTargetBook ? 1 : fanOpacity;
-
-  // Front cover leaf rotation: 0° closed, -180° open
-  let coverAngle = 0;
-  if (isTargetBook) {
-    if (animationState === "open") {
-      coverAngle = -180;
-    } else if (animationState === "opening") {
-      coverAngle = -180;
-    } else if (animationState === "closing") {
-      coverAngle = 0;
-    }
-  }
+  const isOpeningOrOpen =
+    (animationState === "opening" || animationState === "open" || animationState === "closingCover") &&
+    isTargetBook;
 
   // --- INTERACTIVE PAGE TURNING (WHEN OPEN) ---
   const handleLeafPointerDown = (e) => {
@@ -208,8 +177,8 @@ export default function Persistent3DBook({
         opacity: currentOpacity,
         pointerEvents: isTargetBook ? "auto" : absDiff < 1.35 && !isAnyActive ? "auto" : "none",
         transform: `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, ${currentZ.toFixed(2)}px) rotateZ(${currentRotateZ.toFixed(2)}deg) rotateY(${currentRotateY.toFixed(2)}deg) scale(${currentScale.toFixed(3)})`,
-        transition: isTargetBook
-          ? "transform 0.62s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease"
+        transition: isAnyActive
+          ? "transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease"
           : "transform 0.35s ease-out, opacity 0.35s ease-out, filter 0.4s ease",
       }}
       onClick={!isAnyActive ? onTap : undefined}
@@ -322,9 +291,13 @@ export default function Persistent3DBook({
             width: `${W}px`,
             height: `${H}px`,
             transform: `rotateY(${coverAngle}deg)`,
-            transition: isTargetBook
-              ? "transform 0.64s cubic-bezier(0.22, 1, 0.36, 1)"
-              : "none",
+            transition:
+              isTargetBook &&
+              (animationState === "opening" ||
+                animationState === "open" ||
+                animationState === "closingCover")
+                ? "transform 0.62s cubic-bezier(0.22, 1, 0.36, 1)"
+                : "none",
           }}
         >
           {/* A. Outside Face of Front Cover (Visible when closed) */}

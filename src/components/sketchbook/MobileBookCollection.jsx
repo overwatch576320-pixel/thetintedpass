@@ -181,7 +181,7 @@ export default function MobileBookCollection({
   const handlePointerUp = (e) => finishGesture(e);
   const handlePointerCancel = (e) => finishGesture(e);
 
-  // --- SINGLE-TAP IMMEDIATE OPENING (NO SEPARATE SELECTION STEP) ---
+  // --- COORDINATED SELECTION & COLLISION-AWARE REPOSITIONING ---
   const handleBookTap = (index) => {
     if (animationState !== "inCollection" || hasMovedRef.current) return;
 
@@ -189,37 +189,52 @@ export default function MobileBookCollection({
     clearTimeout(openTimerRef.current);
     clearTimeout(closeTimerRef.current);
 
-    // Immediately designate this tapped book as the target
+    // 1. Immediately designate this tapped book as the target
     setTargetBookIndex(index);
-    // Begin continuous physical opening animation immediately!
-    setAnimationState("opening");
+
+    // 2. Step 1: Coordinated repositioning and dynamic local Z-axis rotation (~620ms)
+    // All 3 books adjust positions and local Z-rotations according to proximity and movement
+    setAnimationState("repositioning");
     if (onOpenBook) onOpenBook(collection[index]);
 
-    // Settle into stable open double-page spread
+    // 3. Step 2: Once the selected book reaches its central position, begin book-opening (~620ms)
     openTimerRef.current = setTimeout(() => {
-      setAnimationState("open");
-    }, 640);
+      setAnimationState("opening");
+
+      // 4. Step 3: Settle into open double-page spread
+      openTimerRef.current = setTimeout(() => {
+        setAnimationState("open");
+      }, 640);
+    }, 620);
   };
 
-  // --- CLOSING SEQUENCE ---
+  // --- REVERSE ANIMATION SEQUENCE ---
   const handleCloseBook = () => {
     if (animationState !== "open" && animationState !== "opening") return;
 
     clearTimeout(openTimerRef.current);
     clearTimeout(closeTimerRef.current);
 
-    // 1. Animate cover shut and chassis gliding back to fan slot
-    setAnimationState("closing");
+    // 1. Swing front cover shut (~500ms)
+    setAnimationState("closingCover");
     if (onCloseBook) onCloseBook();
 
-    // 2. Return to 'inCollection' once settled back into slot
     closeTimerRef.current = setTimeout(() => {
-      setAnimationState("inCollection");
-      setTargetBookIndex(null);
-    }, 580);
+      // 2. Coordinated reverse of all 3 books to original fan positions and rotations (~620ms)
+      setAnimationState("reversing");
+
+      closeTimerRef.current = setTimeout(() => {
+        // 3. Settled back into collection
+        setAnimationState("inCollection");
+        setTargetBookIndex(null);
+      }, 640);
+    }, 500);
   };
 
-  const isReadingMode = animationState === "open" || animationState === "opening";
+  const isReadingMode =
+    animationState === "open" ||
+    animationState === "opening" ||
+    animationState === "closingCover";
   const selectedBook = targetBookIndex !== null ? collection[targetBookIndex] : null;
 
   return (
