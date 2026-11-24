@@ -7,20 +7,17 @@ import "./sketchbook.css";
  * An authentic physical 3D hardcover artist sketchbook.
  *
  * It remains the EXACT SAME physical object across:
- * - 'inCollection': fanned upright in the 3-book mobile arrangement.
- * - 'repositioning': coordinated dynamic local Z-axis rotation & collision avoidance.
- * - 'opening': front cover leaf swings open outward (-180°).
- * - 'open': double-page cotton rag spread with gesture-driven page turning.
- * - 'closingCover': front cover swings shut (0°).
- * - 'reversing': smooth coordinated return to original fanned slots without collision.
+ * - Closed in collection fan (0.0): upright, mirrored inward yaw, 3D hardcover volume.
+ * - Opening / Closing (0.0 < p < 1.0): front cover lifts naturally around the left spine hinge,
+ *   smoothly revealing the page stack underneath with physical cast shadows and centering shift.
+ * - Open spread (1.0): full double-page spread with gesture-driven folio navigation.
  */
 export default function Persistent3DBook({
   book,
   bookIndex,
   scrollProgress,
-  animationState = "inCollection",
+  openProgress = 0,
   targetBookIndex = null,
-  transitionProgress = 1.0,
   dragYaw = 0,
   dragVelocity = 0,
   dimensions = { width: 160, height: 226 },
@@ -40,26 +37,21 @@ export default function Persistent3DBook({
   const edgeColor = book.edgeColor || "#101417";
   const paperColor = book.paperColor || "#fbf8f0";
 
-  // Reset spread to 1 when book closes or returns to collection
+  // Reset spread to 1 when book closes
   useEffect(() => {
-    if (
-      animationState === "inCollection" ||
-      animationState === "closingCover" ||
-      animationState === "reversing"
-    ) {
+    if (openProgress === 0) {
       setCurrentSpread(1);
       setDragProgress(0);
       setIsDraggingLeaf(false);
     }
-  }, [animationState]);
+  }, [openProgress]);
 
-  // Compute coordinated 3D transform with dynamic local Z-axis rotation, movement-responsive Y-axis rotation, and collision avoidance
+  // Compute continuous 60fps 3D transforms for physical positioning
   const bookTransform = getCoordinatedBookTransform({
     bookIndex,
     scrollProgress,
     targetBookIndex,
-    animationState,
-    transitionProgress,
+    openProgress,
     dragYaw,
     dragVelocity,
     dimensions,
@@ -83,15 +75,14 @@ export default function Persistent3DBook({
   const diff = bookIndex - scrollProgress;
   const absDiff = Math.abs(diff);
 
-  const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
+  const isAnyActive = targetBookIndex !== null && openProgress > 0;
   const isBackgroundBook = isAnyActive && !isTargetBook;
-  const isOpeningOrOpen =
-    (animationState === "opening" || animationState === "open" || animationState === "closingCover") &&
-    isTargetBook;
+  const isOpeningOrOpen = isTargetBook && openProgress > 0.05;
+  const isFullyOpen = isTargetBook && openProgress >= 0.92;
 
-  // --- INTERACTIVE PAGE TURNING (WHEN OPEN) ---
+  // --- INTERACTIVE SPREAD TURNING (WHEN OPEN) ---
   const handleLeafPointerDown = (e) => {
-    if (animationState !== "open" || !isTargetBook) return;
+    if (!isFullyOpen) return;
     leafDragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -102,7 +93,7 @@ export default function Persistent3DBook({
 
   const handleLeafPointerMove = (e) => {
     const gesture = leafDragRef.current;
-    if (!gesture || animationState !== "open") return;
+    if (!gesture || !isFullyOpen) return;
 
     const dx = e.clientX - gesture.startX;
     if (Math.abs(dx) > 6) {
@@ -121,21 +112,19 @@ export default function Persistent3DBook({
 
   const handleLeafPointerUp = () => {
     const gesture = leafDragRef.current;
-    if (!gesture || animationState !== "open") {
+    if (!gesture || !isFullyOpen) {
       leafDragRef.current = null;
       return;
     }
     leafDragRef.current = null;
 
     if (!gesture.moved) {
-      // Clean tap on page: right page advances, left page retreats
       if (gesture.direction === 1) {
         advanceSpread(1);
       } else {
         advanceSpread(-1);
       }
     } else {
-      // Drag released
       if (gesture.direction === 1 && dragProgress > 0.32) {
         advanceSpread(1);
       } else if (gesture.direction === -1 && dragProgress > 0.32) {
@@ -151,7 +140,7 @@ export default function Persistent3DBook({
     const next = currentSpread + delta;
 
     if (next < 1) {
-      // Turned backward past Spread 1 -> close book and return to fan!
+      // Swiped backward past Spread 1 -> close book and return to fan!
       if (onCloseRequest) onCloseRequest();
       return;
     }
@@ -161,8 +150,6 @@ export default function Persistent3DBook({
     }
   };
 
-  const isFirstSpread = currentSpread === 1;
-
   // Spread page numbering
   const spreadIndex = currentSpread - 1;
   const leftPageNum = spreadIndex * 2 + 1;
@@ -171,11 +158,23 @@ export default function Persistent3DBook({
   const leftPageData = book.pages?.[leftPageNum - 1] || null;
   const rightPageData = book.pages?.[rightPageNum - 1] || null;
 
-  // Progressive depth-of-field softening for distant books
+  // Progressive depth-of-field softening for background books
   let dofFilter = currentFilter || "none";
   if (isBackgroundBook) {
-    dofFilter = "brightness(0.68) blur(0.4px)";
+    dofFilter = currentFilter;
   }
+
+  // Cover lifting shadow on top of right page stack
+  // Smoothly fades as front cover angle rises past vertical (90°)
+  const coverAngleRad = ((coverAngle || 0) * Math.PI) / 180;
+  const liftingShadowOpacity =
+    isTargetBook && openProgress < 0.65
+      ? Math.max(0, Math.cos(coverAngleRad)) * (1 - openProgress)
+      : 0;
+
+  // Specular sheen on outer cover art adapting to rotational tilt
+  const sheenIntensity =
+    0.14 + 0.38 * Math.sin((Math.abs(coverAngle || 0) * Math.PI) / 180);
 
   return (
     <div
@@ -192,14 +191,7 @@ export default function Persistent3DBook({
         filter: dofFilter,
         pointerEvents: isTargetBook ? "auto" : absDiff < 2.5 && !isAnyActive ? "auto" : "none",
         transform: `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, ${currentZ.toFixed(2)}px) rotateZ(${currentRotateZ.toFixed(2)}deg) rotateY(${currentRotateY.toFixed(2)}deg) scale(${currentScale.toFixed(3)})`,
-        transition:
-          animationState === "repositioning" || animationState === "reversing"
-            ? "none"
-            : animationState === "inCollection"
-            ? "none" // Driven at 60fps by requestAnimationFrame / pointer gestures without transition lag
-            : isAnyActive
-            ? "opacity 0.45s ease"
-            : "transform 0.35s ease-out, opacity 0.35s ease-out, filter 0.4s ease",
+        transition: "none", // Driven smoothly at 60fps via requestAnimationFrame
       }}
       onClick={!isAnyActive ? onTap : undefined}
       role="button"
@@ -218,15 +210,25 @@ export default function Persistent3DBook({
         onPointerUp={handleLeafPointerUp}
         onPointerCancel={handleLeafPointerUp}
       >
-        {/* Soft Contact Shadow on Surface */}
-        <div className="persistent-contact-shadow" aria-hidden="true" />
+        {/* Soft Contact Shadow on Surface — Expands naturally as the left wing opens */}
+        <div
+          className="persistent-contact-shadow"
+          style={{
+            left: `${-W * (isTargetBook ? openProgress : 0) * 0.95 + 6}px`,
+            width: `${W + W * (isTargetBook ? openProgress : 0) * 0.95 - 12}px`,
+            opacity: 0.38 + 0.12 * (1 - (isTargetBook ? openProgress : 0)),
+          }}
+          aria-hidden="true"
+        />
 
         {/* 1. BACK HARDCOVER BOARD (Faces -Z) */}
         <div
           className="persistent-book-face persistent-back-cover"
           style={{
-            width: `${W}px`,
-            height: `${H}px`,
+            width: `${W + 2}px`,
+            height: `${H + 2}px`,
+            left: "-1px",
+            top: "-1px",
             backgroundColor: coverColor,
             borderColor: edgeColor,
           }}
@@ -240,7 +242,9 @@ export default function Persistent3DBook({
           className="persistent-book-face persistent-spine-casing"
           style={{
             width: `${D}px`,
-            height: `${H}px`,
+            height: `${H + 2}px`,
+            left: `-${D / 2}px`,
+            top: "-1px",
             backgroundColor: coverColor,
           }}
           aria-hidden="true"
@@ -251,29 +255,29 @@ export default function Persistent3DBook({
           </div>
         </div>
 
-        {/* 3. FORE-EDGE PAPER BLOCK (Faces +X, on Right Edge, only when closed) */}
-        {!isOpeningOrOpen && (
-          <div
-            className="persistent-book-face persistent-fore-edge"
-            style={{
-              width: `${D}px`,
-              height: `${H - 4}px`,
-              backgroundColor: paperColor,
-            }}
-            aria-hidden="true"
-          >
-            <div className="persistent-paper-lines" />
-          </div>
-        )}
+        {/* 3. FORE-EDGE PAPER BLOCK (Faces +X, on Right Edge of Page Stack) */}
+        <div
+          className="persistent-book-face persistent-fore-edge"
+          style={{
+            width: `${D - 2}px`,
+            height: `${H - 4}px`,
+            left: `${W - 1 - (D - 2) / 2}px`,
+            top: "2px",
+            backgroundColor: paperColor,
+          }}
+          aria-hidden="true"
+        >
+          <div className="persistent-paper-lines" />
+        </div>
 
-        {/* 4. INTERIOR SPREAD (Visible when Open) */}
-        {/* Right Wing (Folio 02 on Spread 1, Folio 04 on Spread 2, etc.) */}
+        {/* 4. INTERIOR SPREAD — Right Wing (Pages Stack) */}
         <div
           className="persistent-right-page-wing"
           style={{
             width: `${W}px`,
             height: `${H}px`,
             backgroundColor: paperColor,
+            transform: "translateZ(9.5px)",
           }}
         >
           <div className="persistent-folio-surface">
@@ -292,11 +296,28 @@ export default function Persistent3DBook({
             )}
           </div>
           <div className="persistent-gutter-shade right-gutter" />
+
+          {/* Dynamic Lifting Cover Cast Shadow across right page */}
+          {liftingShadowOpacity > 0.01 && (
+            <div
+              className="persistent-cover-lift-shadow"
+              style={{
+                opacity: liftingShadowOpacity,
+              }}
+              aria-hidden="true"
+            />
+          )}
         </div>
 
-        {/* Spine Gutter Ridge & Bookmark Ribbon (Only rendered when open or opening) */}
-        {isOpeningOrOpen && (
-          <div className="persistent-spine-ridge" aria-hidden="true">
+        {/* 5. Spine Center Gutter Ridge & Bookmark Ribbon (Visible when opening/open) */}
+        {isTargetBook && openProgress > 0.12 && (
+          <div
+            className="persistent-spine-ridge"
+            style={{
+              opacity: Math.min(1, (openProgress - 0.12) / 0.35),
+            }}
+            aria-hidden="true"
+          >
             <div
               className="persistent-bookmark-ribbon"
               style={{ backgroundColor: coverColor }}
@@ -311,13 +332,8 @@ export default function Persistent3DBook({
             width: `${W}px`,
             height: `${H}px`,
             transform: `rotateY(${coverAngle}deg)`,
-            transition:
-              isTargetBook &&
-              (animationState === "opening" ||
-                animationState === "open" ||
-                animationState === "closingCover")
-                ? "transform 0.62s cubic-bezier(0.22, 1, 0.36, 1)"
-                : "none",
+            transformOrigin: "0% 50% 11px",
+            transition: "none",
           }}
         >
           {/* A. Outside Face of Front Cover (Visible when closed) */}
@@ -352,7 +368,13 @@ export default function Persistent3DBook({
                 </div>
               </div>
             )}
-            <div className="persistent-cover-sheen" aria-hidden="true" />
+            <div
+              className="persistent-cover-sheen"
+              style={{
+                opacity: sheenIntensity,
+              }}
+              aria-hidden="true"
+            />
           </div>
 
           {/* B. Inside Face of Front Cover: Left Wing Folio (Visible when open) */}

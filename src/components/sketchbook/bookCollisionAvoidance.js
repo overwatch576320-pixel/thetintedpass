@@ -338,20 +338,31 @@ export function solveAllCarouselBooks(
 }
 
 /**
- * Computes coordinated 3D transform for a book in the collection
+ * Computes coordinated 3D transform for a book in the collection.
+ * Supports continuous, reversible physical book opening via openProgress in [0, 1].
  */
 export function getCoordinatedBookTransform({
   bookIndex,
   scrollProgress,
   targetBookIndex,
-  animationState, // 'inCollection' | 'repositioning' | 'opening' | 'open' | 'closingCover' | 'reversing'
-  transitionProgress = 1.0, // 0 to 1 during repositioning and reversing
+  openProgress = 0, // 0 = fully closed in collection, 1 = fully open reading spread
+  animationState, // preserved for backwards compatibility
+  transitionProgress = 1.0, // preserved for backwards compatibility
   dragYaw = 0,
   dragVelocity = 0,
   dimensions,
   totalBooks = 5,
 }) {
-  const isAnyActive = targetBookIndex !== null && animationState !== "inCollection";
+  // Derive effective continuous progress:
+  let p = openProgress;
+  if (p === 0 && targetBookIndex !== null) {
+    if (animationState === "open" || animationState === "opening") p = 1.0;
+    else if (animationState === "closingCover") p = 0.0;
+    else if (animationState === "repositioning") p = transitionProgress * 0.15;
+    else if (animationState === "reversing") p = (1 - transitionProgress) * 0.15;
+  }
+
+  const isAnyActive = targetBookIndex !== null && p > 0;
 
   // --- 1. CLOSED BOOK CAROUSEL HORIZONTAL SLIDING & BROWSING ---
   if (!isAnyActive) {
@@ -372,140 +383,86 @@ export function getCoordinatedBookTransform({
   const fanRotateY = computeCarouselMirroredYaw(diff);
   const fanScale = computeCarouselScale(absDiff);
 
-  // --- 2. ACTIVE SELECTION / READING DESTINATION VALUES ---
   const isTarget = targetBookIndex === bookIndex;
+  const clampedP = Math.max(0, Math.min(1, p));
+  // Smooth natural polynomial ease: S(t) = t * t * (3 - 2 * t)
+  const eased = clampedP * clampedP * (3 - 2 * clampedP);
 
-  // Reading position for selected book (spine centered at screen X = W/2)
-  const destReadingX = W / 2;
-  const destReadingY = -8;
-  const destReadingZ = 75; // prominently in foreground
-  const destReadingRotateZ = 0; // completely straightened
-  const destReadingRotateY = 0; // completely front-facing
-  const destReadingScale = 1.0;
-
-  // Final clearance offsets and peak movement yaw angles:
-  let destClearDeltaX = 0;
-  let destClearDeltaY = 4;
-  let destClearDeltaZ = -25;
-  let destClearDeltaRotateZ = 0;
-  let peakMovementYaw = 0;
-
-  if (!isTarget) {
-    if (bookIndex < targetBookIndex) {
-      // Background book on left: shifts leftward to clear space for the open reading spread
-      const distFromTarget = targetBookIndex - bookIndex;
-      destClearDeltaX = -18 - distFromTarget * 10;
-      destClearDeltaZ = -30 - distFromTarget * 15;
-      destClearDeltaRotateZ = -3.0;
-      peakMovementYaw = -16.0;
-    } else {
-      // Background book on right: shifts rightward
-      const distFromTarget = bookIndex - targetBookIndex;
-      destClearDeltaX = 24 + distFromTarget * 10;
-      destClearDeltaZ = -30 - distFromTarget * 15;
-      destClearDeltaRotateZ = 4.0;
-      peakMovementYaw = +16.0;
-    }
-  } else {
-    // Target book: sweeps towards reading position (spine centered at W/2)
-    const travelDx = destReadingX - fanX;
-    peakMovementYaw = travelDx > 0 ? +26.0 : travelDx < 0 ? -26.0 : 0;
-  }
-
-  const destX = isTarget ? destReadingX : fanX + destClearDeltaX;
-  const destY = isTarget ? destReadingY : fanY + destClearDeltaY;
-  const destZ = isTarget ? destReadingZ : fanZ + destClearDeltaZ;
-  const destRotateZ = isTarget ? destReadingRotateZ : fanRotateZ + destClearDeltaRotateZ;
-  const destRotateY = isTarget ? destReadingRotateY : fanRotateY;
-  const destScale = isTarget ? destReadingScale : fanScale;
-
-  // --- 3. DYNAMIC PROGRESS & MOVEMENT-RESPONSIVE Y-AXIS ROTATION ---
-  const t = Math.max(0, Math.min(1, transitionProgress));
-  const p = easeInOutCubic(t);
-
-  const isReversing = animationState === "reversing";
-  const yawMultiplier = isReversing ? -1 : 1;
-  const yawBell = Math.sin(Math.PI * Math.pow(t, 0.92));
-  const dynamicMovementYaw = peakMovementYaw * yawBell * yawMultiplier;
-
-  // Instantaneous spatial coordinates:
-  let currentX, currentY, currentZ, currentRotateZ, currentRotateY, currentScale;
-
-  if (animationState === "repositioning") {
-    currentX = fanX + (destX - fanX) * p;
-    currentY = fanY + (destY - fanY) * p;
-    currentRotateZ = fanRotateZ + (destRotateZ - fanRotateZ) * p;
-    currentRotateY = fanRotateY + (destRotateY - fanRotateY) * p + dynamicMovementYaw;
-    currentScale = fanScale + (destScale - fanScale) * p;
-
-    // Forward-Arc Depth Trajectory:
-    if (isTarget) {
-      const earlyLift = Math.min(1, t * 1.8);
-      currentZ = fanZ + (destZ - fanZ) * easeInOutCubic(earlyLift);
-    } else {
-      const earlyDrop = Math.min(1, t * 1.8);
-      currentZ = fanZ + (destZ - fanZ) * easeInOutCubic(earlyDrop);
-    }
-  } else if (animationState === "reversing") {
-    currentX = destX + (fanX - destX) * p;
-    currentY = destY + (fanY - destY) * p;
-    currentZ = destZ + (fanZ - destZ) * p;
-    currentRotateZ = destRotateZ + (fanRotateZ - destRotateZ) * p;
-    currentRotateY = destRotateY + (fanRotateY - destRotateY) * p + dynamicMovementYaw;
-    currentScale = destScale + (fanScale - destScale) * p;
-  } else {
-    currentX = destX;
-    currentY = destY;
-    currentZ = destZ;
-    currentRotateZ = destRotateZ;
-    currentRotateY = destRotateY;
-    currentScale = destScale;
-  }
-
-  // Stacking z-index: Selected book on top
-  const zIndex = isTarget
-    ? 100
-    : Math.max(1, Math.round(50 + currentZ));
-
-  let opacity = computeCarouselOpacity(absDiff);
-  if (!isTarget) {
-    if (animationState === "open" || animationState === "opening") {
-      opacity = 0.35;
-    }
-  } else {
-    opacity = 1.0;
-  }
-
-  let filter = computeCarouselBlur(absDiff);
-  if (!isTarget && (animationState === "open" || animationState === "opening")) {
-    filter = "brightness(0.68) blur(0.4px)";
-  }
-
-  let coverAngle = 0;
   if (isTarget) {
-    if (animationState === "opening" || animationState === "open") {
-      coverAngle = -180;
-    } else {
-      coverAngle = 0;
-    }
+    // When the front cover rotates -180° around the left spine hinge to form the left page,
+    // the spine shifts from X = fanX to X = 0 (stage center).
+    // The closed book spans from X = 0 to X = W relative to its spine.
+    // In the open spread, the spine is centered at X = 0, so the book root is at X = W/2.
+    const destReadingX = W / 2;
+    const destReadingY = 0;
+    const destReadingZ = 50; // prominently in foreground
+    const destReadingRotateZ = 0; // completely straightened
+    const destReadingRotateY = 0; // completely front-facing
+    const destReadingScale = 1.0;
+
+    const currentX = fanX + (destReadingX - fanX) * eased;
+    const currentY = fanY + (destReadingY - fanY) * eased;
+    const currentZ = fanZ + (destReadingZ - fanZ) * eased;
+    const currentRotateZ = fanRotateZ * (1 - eased);
+    const currentRotateY = fanRotateY * (1 - eased);
+    const currentScale = fanScale + (destReadingScale - fanScale) * eased;
+
+    // Cover rotation around spine hinge:
+    // Uses smoothstep easing so it lifts gently from 0°, moves swiftly through 90°,
+    // and settles gently into -180° without slamming or snapping.
+    const coverAngle = -180.0 * eased;
+
+    return {
+      x: currentX,
+      y: currentY,
+      z: currentZ,
+      rotateZ: currentRotateZ,
+      rotateY: currentRotateY,
+      scale: currentScale,
+      zIndex: 100,
+      opacity: 1.0,
+      filter: "none",
+      coverAngle,
+      isTarget: true,
+      openProgress: clampedP,
+    };
   }
+
+  // Background books: smoothly part and yield into atmospheric depth
+  const distFromTarget = bookIndex - targetBookIndex;
+  const sign = distFromTarget > 0 ? 1 : -1;
+  const absDist = Math.abs(distFromTarget);
+
+  const clearDeltaX = sign * (24 + absDist * 12) * eased;
+  const clearDeltaZ = (-35 - absDist * 15) * eased;
+  const clearDeltaY = absDist * 2.5 * eased;
+
+  const currentX = fanX + clearDeltaX;
+  const currentY = fanY + clearDeltaY;
+  const currentZ = fanZ + clearDeltaZ;
+  const currentRotateZ = fanRotateZ;
+  const currentRotateY = fanRotateY;
+  const currentScale = fanScale;
+
+  const zIndex = Math.max(1, Math.round(45 + currentZ));
+  const baseOpacity = computeCarouselOpacity(absDiff);
+  const opacity = Math.max(0.25, baseOpacity * (1 - 0.65 * eased));
+  const baseFilter = computeCarouselBlur(absDiff);
+  const blurExtra = (0.45 * eased).toFixed(2);
+  const filter = eased > 0.01 ? `blur(${blurExtra}px) brightness(${Math.max(0.68, 0.95 - eased * 0.25).toFixed(2)})` : baseFilter;
 
   return {
     x: currentX,
     y: currentY,
     z: currentZ,
     rotateZ: currentRotateZ,
-    rotateY:
-      animationState === "open" ||
-      animationState === "opening" ||
-      animationState === "closingCover"
-        ? 0
-        : currentRotateY,
+    rotateY: currentRotateY,
     scale: currentScale,
+    zIndex,
     opacity,
     filter,
-    zIndex,
-    coverAngle,
-    isTarget,
+    coverAngle: 0,
+    isTarget: false,
+    openProgress: clampedP,
   };
 }
