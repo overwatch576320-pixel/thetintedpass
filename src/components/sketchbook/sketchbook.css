@@ -2717,3 +2717,69 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+
+/* ==========================================================================
+   SUBDIVIDED 3D FLEXIBLE PAPER PAGE TURNING ENGINE
+   Authentic developable paper curl with 18 dynamic strips, dual-sided rendering,
+   specular crest sheen, and ambient cast shadows.
+   ========================================================================== */
+
+.curved-paper-host {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  z-index: 50;
+  will-change: transform;
+}
+
+.curved-paper-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.curved-strip-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.curved-strip-slice-content {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.curved-strip-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.curved-paper-cast-shadow {
+  position: absolute;
+  border-radius: 4px;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Enhanced Physical Paper Stack Layers */
+.persistent-right-page-wing,
+.persistent-leaf-face.front-inside-face {
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.persistent-book-chassis {
+  user-select: none;
+  touch-action: pan-y;
+}

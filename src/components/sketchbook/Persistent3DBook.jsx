@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { getCoordinatedBookTransform } from "./bookCollisionAvoidance";
+import CurvedPaperSheet from "./CurvedPaperSheet";
 import "./sketchbook.css";
 
 /**
@@ -10,7 +11,7 @@ import "./sketchbook.css";
  * - Closed in collection fan (0.0): upright, mirrored inward yaw, 3D hardcover volume.
  * - Opening / Closing (0.0 < p < 1.0): front cover lifts naturally around the left spine hinge,
  *   smoothly revealing the page stack underneath with physical cast shadows and centering shift.
- * - Open spread (1.0): full double-page spread with gesture-driven folio navigation.
+ * - Open spread (1.0): full double-page spread with realistic flexible 3D paper page-turning.
  */
 export default function Persistent3DBook({
   book,
@@ -29,20 +30,28 @@ export default function Persistent3DBook({
   const D = 22; // Physical hardcover depth / spine thickness in pixels
 
   const [currentSpread, setCurrentSpread] = useState(1);
-  const [dragProgress, setDragProgress] = useState(0);
-  const [isDraggingLeaf, setIsDraggingLeaf] = useState(false);
-  const leafDragRef = useRef(null);
+  const [turningState, setTurningState] = useState(null);
+  // turningState: { direction: 1|-1, fromSpread: number, progress: number, grabY: number, isDragging: boolean }
+
+  const turnAnimRef = useRef(null);
+  const gestureRef = useRef(null);
+  const turningStateRef = useRef(null);
+  turningStateRef.current = turningState;
 
   const coverColor = book.coverColor || "#1c2328";
   const edgeColor = book.edgeColor || "#101417";
   const paperColor = book.paperColor || "#fbf8f0";
 
-  // Reset spread to 1 when book closes
+  const totalPages = book.pages?.length || 8;
+  const totalSpreads = Math.max(1, Math.ceil(totalPages / 2));
+
+  // Reset spread and turning state when book closes
   useEffect(() => {
     if (openProgress === 0) {
+      cancelAnimationFrame(turnAnimRef.current);
       setCurrentSpread(1);
-      setDragProgress(0);
-      setIsDraggingLeaf(false);
+      setTurningState(null);
+      gestureRef.current = null;
     }
   }, [openProgress]);
 
@@ -80,95 +89,269 @@ export default function Persistent3DBook({
   const isOpeningOrOpen = isTargetBook && openProgress > 0.05;
   const isFullyOpen = isTargetBook && openProgress >= 0.92;
 
-  // --- INTERACTIVE SPREAD TURNING (WHEN OPEN) ---
-  const handleLeafPointerDown = (e) => {
+  // --- SMOOTH ANIMATION FOR PAGE TURNING (TAP, FLICK, MID-FLIGHT REVERSAL) ---
+  const animateTurnTo = useCallback(
+    (targetProgress, duration = 520, onComplete) => {
+      cancelAnimationFrame(turnAnimRef.current);
+      const state = turningStateRef.current;
+      if (!state) return;
+
+      const startProgress = state.progress;
+      const change = targetProgress - startProgress;
+      if (Math.abs(change) < 0.001) {
+        if (targetProgress >= 0.999) {
+          setCurrentSpread((prev) =>
+            Math.max(1, Math.min(totalSpreads, state.fromSpread + state.direction))
+          );
+        }
+        setTurningState(null);
+        if (onComplete) onComplete();
+        return;
+      }
+
+      const actualDuration = Math.max(160, duration * Math.abs(change));
+      const startTime = performance.now();
+
+      const step = (now) => {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / actualDuration);
+        // Smoothstep polynomial S(t) = t * t * (3 - 2 * t)
+        const eased = t * t * (3 - 2 * t);
+        const current = startProgress + change * eased;
+
+        setTurningState((prev) => (prev ? { ...prev, progress: current, isDragging: false } : null));
+
+        if (t < 1) {
+          turnAnimRef.current = requestAnimationFrame(step);
+        } else {
+          if (targetProgress >= 0.999) {
+            setCurrentSpread((prev) =>
+              Math.max(1, Math.min(totalSpreads, state.fromSpread + state.direction))
+            );
+          }
+          setTurningState(null);
+          if (onComplete) onComplete();
+        }
+      };
+
+      turnAnimRef.current = requestAnimationFrame(step);
+    },
+    [totalSpreads]
+  );
+
+  // Trigger programmatic or tap page turn
+  const triggerPageTurn = useCallback(
+    (dir, grabY = 0) => {
+      if (!isFullyOpen || turningStateRef.current) return;
+
+      if (dir === 1 && currentSpread >= totalSpreads) return;
+      if (dir === -1 && currentSpread <= 1) {
+        // Turning backward past Spread 1 closes the book and returns to collection
+        if (onCloseRequest) onCloseRequest();
+        return;
+      }
+
+      setTurningState({
+        direction: dir,
+        fromSpread: currentSpread,
+        progress: 0,
+        grabY,
+        isDragging: false,
+      });
+
+      // Animate smoothly to completion
+      setTimeout(() => {
+        animateTurnTo(1.0, 520);
+      }, 16);
+    },
+    [isFullyOpen, currentSpread, totalSpreads, onCloseRequest, animateTurnTo]
+  );
+
+  // --- INTERACTIVE DRAG & TAP GESTURE RECOGNITION ---
+  const handlePointerDown = (e) => {
     if (!isFullyOpen) return;
-    if (e.target.closest(".persistent-back-cover-close-zone") || e.target.closest(".persistent-back-cover")) {
+    // Do not intercept if interacting with the back cover close zone or header buttons
+    if (
+      e.target.closest(".persistent-back-cover-close-zone") ||
+      e.target.closest(".open-book-header-bar")
+    ) {
       return;
     }
-    leafDragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      direction: e.clientX < window.innerWidth / 2 ? -1 : 1, // -1 = left page, 1 = right page
-      moved: false,
-    };
-  };
 
-  const handleLeafPointerMove = (e) => {
-    const gesture = leafDragRef.current;
-    if (!gesture || !isFullyOpen) return;
+    const chassisEl = e.currentTarget;
+    const rect = chassisEl.getBoundingClientRect();
+    const clickX = e.clientX - (rect.left + rect.width / 2); // Relative to spine center (x=0)
+    const grabY = Math.max(-1, Math.min(1, ((e.clientY - (rect.top + rect.height / 2)) / (H / 2))));
 
-    const dx = e.clientX - gesture.startX;
-    if (Math.abs(dx) > 6) {
-      gesture.moved = true;
-      setIsDraggingLeaf(true);
-    }
+    // Determine intended turn direction based on side clicked
+    // Right wing (x > 0) -> Turn Forward (1)
+    // Left wing (x < 0)  -> Turn Backward (-1)
+    const dir = clickX >= 0 ? 1 : -1;
 
-    if (gesture.direction === 1) {
-      const progress = Math.max(0, Math.min(1, -dx / (W * 0.85)));
-      setDragProgress(progress);
-    } else {
-      const progress = Math.max(0, Math.min(1, dx / (W * 0.85)));
-      setDragProgress(progress);
-    }
-  };
-
-  const handleLeafPointerUp = () => {
-    const gesture = leafDragRef.current;
-    if (!gesture || !isFullyOpen) {
-      leafDragRef.current = null;
-      return;
-    }
-    leafDragRef.current = null;
-
-    if (!gesture.moved) {
-      if (gesture.direction === 1) {
-        advanceSpread(1);
-      } else {
-        advanceSpread(-1);
-      }
-    } else {
-      if (gesture.direction === 1 && dragProgress > 0.32) {
-        advanceSpread(1);
-      } else if (gesture.direction === -1 && dragProgress > 0.32) {
-        advanceSpread(-1);
-      }
-    }
-    setIsDraggingLeaf(false);
-    setDragProgress(0);
-  };
-
-  const advanceSpread = (delta) => {
-    const totalSpreads = Math.ceil((book.pages?.length || 8) / 2);
-    const next = currentSpread + delta;
-
-    if (next < 1) {
-      // Swiped backward past Spread 1 -> close book and return to fan!
+    // Check boundary conditions
+    if (dir === 1 && currentSpread >= totalSpreads) return;
+    if (dir === -1 && currentSpread <= 1) {
+      // Tapping left wing on Spread 1 triggers gentle close request
       if (onCloseRequest) onCloseRequest();
       return;
     }
 
-    if (next <= totalSpreads) {
-      setCurrentSpread(next);
+    try {
+      chassisEl.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    gestureRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      grabY,
+      direction: dir,
+      startTime: performance.now(),
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (e) => {
+    const gesture = gestureRef.current;
+    if (!gesture || !isFullyOpen) return;
+
+    const dx = e.clientX - gesture.startX;
+    const dy = e.clientY - gesture.startY;
+
+    if (!gesture.moved && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      gesture.moved = true;
+      cancelAnimationFrame(turnAnimRef.current);
+      setTurningState({
+        direction: gesture.direction,
+        fromSpread: currentSpread,
+        progress: 0,
+        grabY: gesture.grabY,
+        isDragging: true,
+      });
+    }
+
+    if (!gesture.moved) return;
+
+    // Calculate drag progress along curling arc
+    const dragDistance = W * 0.95;
+    let progress = 0;
+    if (gesture.direction === 1) {
+      // Forward turn: dragging leftward increases progress
+      progress = Math.max(0, Math.min(1, -dx / dragDistance));
+    } else {
+      // Backward turn: dragging rightward increases progress
+      progress = Math.max(0, Math.min(1, dx / dragDistance));
+    }
+
+    setTurningState((prev) =>
+      prev ? { ...prev, progress, isDragging: true } : {
+        direction: gesture.direction,
+        fromSpread: currentSpread,
+        progress,
+        grabY: gesture.grabY,
+        isDragging: true,
+      }
+    );
+  };
+
+  const handlePointerUp = (e) => {
+    const gesture = gestureRef.current;
+    if (!gesture || !isFullyOpen) {
+      gestureRef.current = null;
+      return;
+    }
+
+    gestureRef.current = null;
+    try {
+      if (e?.currentTarget && gesture.pointerId) {
+        e.currentTarget.releasePointerCapture(gesture.pointerId);
+      }
+    } catch (_) {}
+
+    const dx = e.clientX - gesture.startX;
+    const dt = Math.max(1, performance.now() - gesture.startTime);
+    const velocity = Math.abs(dx) / dt;
+
+    if (!gesture.moved) {
+      // TAP / CLICK INTERACTION
+      triggerPageTurn(gesture.direction, gesture.grabY);
+      return;
+    }
+
+    // DRAG / FLICK INTERACTION
+    const state = turningStateRef.current;
+    if (!state) return;
+
+    const shouldComplete =
+      state.progress > 0.35 || (velocity > 0.3 && state.progress > 0.12);
+
+    if (shouldComplete) {
+      // Fling or pull completed: smoothly settle into opposite stack
+      animateTurnTo(1.0, 380);
+    } else {
+      // Pull cancelled or released early: smoothly return to starting stack
+      animateTurnTo(0.0, 320);
     }
   };
 
-  // Spread page numbering
-  const spreadIndex = currentSpread - 1;
+  // --- SPREAD PAGES DATA RESOLUTION ---
+  const activeSpread = currentSpread;
+  const spreadIndex = activeSpread - 1;
   const leftPageNum = spreadIndex * 2 + 1;
   const rightPageNum = spreadIndex * 2 + 2;
 
-  const leftPageData = book.pages?.[leftPageNum - 1] || null;
-  const rightPageData = book.pages?.[rightPageNum - 1] || null;
+  const restingLeftPage = book.pages?.[leftPageNum - 1] || null;
+  const restingRightPage = book.pages?.[rightPageNum - 1] || null;
 
-  // Progressive depth-of-field softening for background books
-  let dofFilter = currentFilter || "none";
-  if (isBackgroundBook) {
-    dofFilter = currentFilter;
+  // Resolve pages visible under turning sheet
+  let turningFrontPage = null;
+  let turningBackPage = null;
+  let displayedLeftPage = restingLeftPage;
+  let displayedRightPage = restingRightPage;
+
+  if (turningState) {
+    const { direction, fromSpread } = turningState;
+    if (direction === 1) {
+      // Forward Turn: right page lifts, curls across, lands on left stack
+      const liftingPageNum = fromSpread * 2;
+      const landingPageNum = fromSpread * 2 + 1;
+      const nextRightPageNum = fromSpread * 2 + 2;
+
+      turningFrontPage = book.pages?.[liftingPageNum - 1] || { pageNumber: liftingPageNum };
+      turningBackPage = book.pages?.[landingPageNum - 1] || { pageNumber: landingPageNum };
+
+      // Underneath on the right stack is the next right page
+      displayedRightPage = book.pages?.[nextRightPageNum - 1] || null;
+      // Underneath on the left stack is the existing left page
+      displayedLeftPage = book.pages?.[(fromSpread - 1) * 2] || null;
+    } else {
+      // Backward Turn: left page lifts, curls across, lands on right stack
+      const liftingPageNum = (fromSpread - 1) * 2 + 1;
+      const landingPageNum = (fromSpread - 1) * 2;
+      const prevLeftPageNum = (fromSpread - 2) * 2 + 1;
+
+      turningBackPage = book.pages?.[liftingPageNum - 1] || { pageNumber: liftingPageNum };
+      turningFrontPage = book.pages?.[landingPageNum - 1] || { pageNumber: landingPageNum };
+
+      // Underneath on the left stack is the previous left page
+      displayedLeftPage = fromSpread > 1 ? book.pages?.[prevLeftPageNum - 1] || null : null;
+      // Underneath on the right stack is the existing right page
+      displayedRightPage = book.pages?.[fromSpread * 2 - 1] || null;
+    }
   }
 
+  // Realistic physical paper stack thickness
+  // Left stack builds as pages turn; Right stack diminishes
+  const leftStackThickness = Math.max(0, (currentSpread - 1) * 0.35);
+  const rightStackThickness = Math.max(0, (totalSpreads - currentSpread) * 0.35);
+  const leftStackZ = isFullyOpen ? 8.5 + leftStackThickness : 9.0;
+  const rightStackZ = isFullyOpen ? 8.5 + rightStackThickness : 9.0;
+  const foreEdgeWidth = Math.max(3, D - 4 - ((currentSpread - 1) / totalSpreads) * 8);
+
+  // Progressive depth-of-field softening for background books
+  const dofFilter = isBackgroundBook ? currentFilter : currentFilter || "none";
+
   // Cover lifting shadow on top of right page stack
-  // Smoothly fades as front cover angle rises past vertical (90°)
   const coverAngleRad = ((coverAngle || 0) * Math.PI) / 180;
   const liftingShadowOpacity =
     isTargetBook && openProgress < 0.65
@@ -207,13 +390,14 @@ export default function Persistent3DBook({
         style={{
           width: `${W}px`,
           height: `${H}px`,
+          cursor: isFullyOpen ? "grab" : "pointer",
         }}
-        onPointerDown={handleLeafPointerDown}
-        onPointerMove={handleLeafPointerMove}
-        onPointerUp={handleLeafPointerUp}
-        onPointerCancel={handleLeafPointerUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
-        {/* Soft Contact Shadow on Surface — Expands naturally as the left wing opens */}
+        {/* Soft Contact Shadow on Surface */}
         <div
           className="persistent-contact-shadow"
           style={{
@@ -250,7 +434,7 @@ export default function Persistent3DBook({
         >
           <div className="persistent-back-monogram">TTP</div>
 
-          {/* Interactive Back Cover Touch Zone (Generous touch target for closing on mobile & desktop) */}
+          {/* Interactive Back Cover Touch Zone */}
           {isFullyOpen && (
             <div
               className="persistent-back-cover-close-zone"
@@ -293,9 +477,9 @@ export default function Persistent3DBook({
         <div
           className="persistent-book-face persistent-fore-edge"
           style={{
-            width: `${D - 2}px`,
+            width: `${foreEdgeWidth}px`,
             height: `${H - 4}px`,
-            left: `${W - 1 - (D - 2) / 2}px`,
+            left: `${W - 1 - foreEdgeWidth / 2}px`,
             top: "2px",
             backgroundColor: paperColor,
           }}
@@ -311,20 +495,29 @@ export default function Persistent3DBook({
             width: `${W}px`,
             height: `${H}px`,
             backgroundColor: paperColor,
-            transform: "translateZ(9.5px)",
+            transform: `translateZ(${rightStackZ.toFixed(2)}px)`,
+            boxShadow:
+              rightStackThickness > 0.5
+                ? `1px 0 0 rgba(0,0,0,0.12), 2px 0 0 rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.15)`
+                : "none",
           }}
         >
           <div className="persistent-folio-surface">
-            {rightPageData?.image ? (
+            {displayedRightPage?.image ? (
               <img
-                src={rightPageData.image}
-                alt={rightPageData.title || `Page ${rightPageNum}`}
+                src={displayedRightPage.image}
+                alt={displayedRightPage.title || `Page ${rightPageNum}`}
                 className="persistent-folio-img"
               />
             ) : (
               <div className="persistent-folio-blank">
                 <span className="persistent-folio-num right-num">
-                  {String(rightPageNum).padStart(2, "0")}
+                  {String(
+                    displayedRightPage?.pageNumber ||
+                      (turningState && turningState.direction === 1
+                        ? rightPageNum + 2
+                        : rightPageNum)
+                  ).padStart(2, "0")}
                 </span>
               </div>
             )}
@@ -343,7 +536,7 @@ export default function Persistent3DBook({
           )}
         </div>
 
-        {/* 5. Spine Center Gutter Ridge & Bookmark Ribbon (Visible when opening/open) */}
+        {/* 5. Spine Center Gutter Ridge & Bookmark Ribbon */}
         {isTargetBook && openProgress > 0.12 && (
           <div
             className="persistent-spine-ridge"
@@ -416,19 +609,28 @@ export default function Persistent3DBook({
             className="persistent-leaf-face front-inside-face"
             style={{
               backgroundColor: paperColor,
+              boxShadow:
+                leftStackThickness > 0.5
+                  ? `-1px 0 0 rgba(0,0,0,0.12), -2px 0 0 rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.15)`
+                  : "none",
             }}
           >
             <div className="persistent-folio-surface">
-              {leftPageData?.image ? (
+              {displayedLeftPage?.image ? (
                 <img
-                  src={leftPageData.image}
-                  alt={leftPageData.title || `Page ${leftPageNum}`}
+                  src={displayedLeftPage.image}
+                  alt={displayedLeftPage.title || `Page ${leftPageNum}`}
                   className="persistent-folio-img"
                 />
               ) : (
                 <div className="persistent-folio-blank">
                   <span className="persistent-folio-num left-num">
-                    {String(leftPageNum).padStart(2, "0")}
+                    {String(
+                      displayedLeftPage?.pageNumber ||
+                        (turningState && turningState.direction === 1
+                          ? leftPageNum
+                          : leftPageNum)
+                    ).padStart(2, "0")}
                   </span>
                 </div>
               )}
@@ -437,19 +639,19 @@ export default function Persistent3DBook({
           </div>
         </div>
 
-        {/* 7. Dynamic Turning Leaf (for Spreads 2+) */}
-        {isDraggingLeaf && (
-          <div
-            className="persistent-turning-leaf"
-            style={{
-              width: `${W}px`,
-              height: `${H}px`,
-              backgroundColor: paperColor,
-              transform: `rotateY(${-dragProgress * 180}deg)`,
-            }}
-          >
-            <div className="leaf-curl-shadow" />
-          </div>
+        {/* 7. REALISTIC FLEXIBLE 3D PAPER SHEET (Subdivided developable conical paper curl) */}
+        {turningState && turningState.progress > 0.001 && turningState.progress < 0.999 && (
+          <CurvedPaperSheet
+            progress={turningState.progress}
+            direction={turningState.direction}
+            grabY={turningState.grabY}
+            frontPage={turningFrontPage}
+            backPage={turningBackPage}
+            width={W}
+            height={H}
+            paperColor={paperColor}
+            baseZ={Math.max(leftStackZ, rightStackZ) + 0.5}
+          />
         )}
       </div>
     </div>

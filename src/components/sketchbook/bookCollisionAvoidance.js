@@ -44,45 +44,41 @@ export function computeCarouselScale(absDiff) {
 
 /**
  * Continuous progressive opacity hierarchy:
- * |d| = 0.0 -> 1.00 (100% full opacity)
- * |d| = 1.0 -> 0.94 (~90–95% opacity)
- * |d| = 2.0 -> 0.88 (~85–90% opacity)
- * |d| = 3.0 -> 0.76 (~70–80% opacity)
- * |d| >= 4.2 -> 0.00
+ * - |d| = 0.0: 1.00 (100% full opacity, completely solid)
+ * - |d| = 1.0: 0.94 (~94% opacity, solid and recognizable)
+ * - |d| = 2.0: 0.84 (~84% opacity, atmospheric softening)
+ * - |d| = 3.0: 0.70 (~70% opacity, blending softly into background)
+ * - |d| >= 4.2: 0.00
  */
 export function computeCarouselOpacity(absDiff) {
   if (absDiff <= 1.0) {
     return 1.00 - absDiff * 0.06;
   } else if (absDiff <= 2.0) {
-    return 0.94 - (absDiff - 1.0) * 0.06;
+    return 0.94 - (absDiff - 1.0) * 0.10;
   } else if (absDiff <= 3.0) {
-    return 0.88 - (absDiff - 2.0) * 0.12;
+    return 0.84 - (absDiff - 2.0) * 0.14;
   } else {
-    return Math.max(0, 0.76 - (absDiff - 3.0) * 0.65);
+    return Math.max(0, 0.70 - (absDiff - 3.0) * 0.55);
   }
 }
 
 /**
  * Continuous progressive depth-of-field blur:
- * |d| <= 0.35 -> none (centre book is completely sharp)
- * |d| = 1.0   -> blur(0.22px) brightness(0.96) (mostly sharp)
- * |d| = 2.0   -> blur(0.48px) brightness(0.93) (noticeably softer)
- * |d| >= 3.0  -> blur(0.78px) brightness(0.90) (subtle atmospheric distance blur)
+ * - |d| = 0.0: completely sharp, 100% opacity and no blur
+ * - |d| -> 0.0: books approaching centre gradually become sharper
+ * - |d| = 1.0: immediate side books slightly blurred (1.1px), covers remain clearly recognisable
+ * - |d| = 2.0: corner books progressively more blurred (2.7px) and softly focused
+ * - |d| >= 3.0: farthest visible books blend softly into background (4.5px)
+ * Applied to the complete 3D object without halos or transparent washouts.
  */
 export function computeCarouselBlur(absDiff) {
-  if (absDiff <= 0.35) {
+  if (absDiff <= 0.04) {
     return "none";
   }
-  let blurPx;
-  if (absDiff <= 1.0) {
-    blurPx = ((absDiff - 0.35) / 0.65) * 0.22;
-  } else if (absDiff <= 2.0) {
-    blurPx = 0.22 + (absDiff - 1.0) * 0.26;
-  } else {
-    blurPx = Math.min(0.85, 0.48 + (absDiff - 2.0) * 0.30);
-  }
-  const brightness = Math.max(0.88, 1.00 - absDiff * 0.035);
-  return `blur(${blurPx.toFixed(2)}px) brightness(${brightness.toFixed(2)})`;
+  const blurPx = Math.min(5.5, 1.10 * Math.pow(absDiff, 1.3));
+  const brightness = Math.max(0.84, 1.00 - absDiff * 0.04);
+  const contrast = Math.max(0.90, 1.00 - absDiff * 0.025);
+  return `blur(${blurPx.toFixed(2)}px) brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)})`;
 }
 
 /**
