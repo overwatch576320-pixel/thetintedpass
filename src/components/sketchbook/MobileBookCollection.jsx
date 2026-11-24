@@ -26,7 +26,7 @@ function getMobileBookDimensions() {
 
 export default function MobileBookCollection({
   books = DEFAULT_BOOK_COLLECTION,
-  initialIndex = 1, // Start with Book 1 (Basgo Citadel) centered
+  initialIndex = 2, // Start with Book 2 (Hemis Monastery) centered to display layered wings on both sides
   onOpenBook,
   onCloseBook,
 }) {

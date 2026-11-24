@@ -2187,6 +2187,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.persistent-3d-book-root.is-book-open {
+  transform-origin: center center;
+}
+
 .persistent-3d-book-root.is-background-book {
   pointer-events: none !important;
   filter: brightness(0.68) blur(0.4px);

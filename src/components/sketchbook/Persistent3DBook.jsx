@@ -63,6 +63,7 @@ export default function Persistent3DBook({
     dragYaw,
     dragVelocity,
     dimensions,
+    totalBooks: 5,
   });
 
   const {
@@ -73,6 +74,7 @@ export default function Persistent3DBook({
     rotateY: currentRotateY,
     scale: currentScale,
     opacity: currentOpacity,
+    filter: currentFilter,
     zIndex,
     coverAngle,
     isTarget: isTargetBook,
@@ -169,6 +171,12 @@ export default function Persistent3DBook({
   const leftPageData = book.pages?.[leftPageNum - 1] || null;
   const rightPageData = book.pages?.[rightPageNum - 1] || null;
 
+  // Progressive depth-of-field softening for distant books
+  let dofFilter = currentFilter || "none";
+  if (isBackgroundBook) {
+    dofFilter = "brightness(0.68) blur(0.4px)";
+  }
+
   return (
     <div
       className={`persistent-3d-book-root ${isTargetBook ? "is-target-book" : ""} ${
@@ -181,7 +189,8 @@ export default function Persistent3DBook({
         marginTop: `-${H / 2}px`,
         zIndex,
         opacity: currentOpacity,
-        pointerEvents: isTargetBook ? "auto" : absDiff < 1.35 && !isAnyActive ? "auto" : "none",
+        filter: dofFilter,
+        pointerEvents: isTargetBook ? "auto" : absDiff < 2.5 && !isAnyActive ? "auto" : "none",
         transform: `translate3d(${currentX.toFixed(2)}px, ${currentY.toFixed(2)}px, ${currentZ.toFixed(2)}px) rotateZ(${currentRotateZ.toFixed(2)}deg) rotateY(${currentRotateY.toFixed(2)}deg) scale(${currentScale.toFixed(3)})`,
         transition:
           animationState === "repositioning" || animationState === "reversing"
