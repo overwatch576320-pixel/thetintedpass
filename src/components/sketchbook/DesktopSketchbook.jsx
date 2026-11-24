@@ -541,8 +541,64 @@ export default function DesktopSketchbook({
         {/* WebGL Canvas Host */}
         <div ref={host} className="sketch-desktop-canvas" aria-hidden="true" />
 
-        {/* Hidden screen-reader announcement */}
-        <nav ref={nav} className="sketch-side-navigation sr-only" aria-label="Sketchbook Navigation">
+        {/* Desktop Exposed Back Cover Close Trigger (when open) */}
+        {page > 0 && (
+          <div
+            className="desktop-back-cover-trigger"
+            title="Close sketchbook (Back cover)"
+            aria-label="Close sketchbook (Back cover)"
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!turn.current) {
+                desired.current = 0;
+                drive.current();
+              }
+            }}
+          >
+            <div className="desktop-back-cover-edge" />
+            <span className="desktop-back-cover-tag">BACK COVER · CLOSE</span>
+          </div>
+        )}
+
+        {/* Side Navigation Chevrons (Matching Reference) */}
+        <nav
+          ref={nav}
+          className={`sketch-side-navigation ${turn.current ? "is-cover-moving" : ""}`}
+          style={{ width: size.width * 2 + 116 }}
+          aria-label="Sketchbook Navigation"
+        >
+          <button
+            type="button"
+            className="sketch-side-nav-prev"
+            aria-label={page === 1 ? "Close the sketchbook" : "Previous pages"}
+            title={page === 1 ? "Close sketchbook (Back cover)" : "Previous page"}
+            disabled={page === 0 || !!turn.current}
+            onClick={(e) => {
+              e.stopPropagation();
+              request(-1);
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M15 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="sketch-side-nav-next"
+            aria-label={page === 0 ? "Open the sketchbook" : page >= last - 1 ? "Close the sketchbook" : "Next pages"}
+            title={page === 0 ? "Open sketchbook" : "Next page"}
+            disabled={page >= last || !!turn.current}
+            onClick={(e) => {
+              e.stopPropagation();
+              request(1);
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
           <span className="sr-only" aria-live="polite">
             {announcement}
           </span>

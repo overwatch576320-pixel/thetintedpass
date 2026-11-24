@@ -375,13 +375,16 @@ export function getCoordinatedBookTransform({
   const absDiff = Math.abs(diff);
   const stepX = Math.round(W * 0.62); // 99px spacing
 
-  // Baseline Fan positions for selection transitions
-  const fanX = diff * stepX;
-  const fanY = absDiff * 5.0;
-  const fanZ = getCarouselBaseZ(absDiff);
-  const fanRotateZ = diff * 7.0;
-  const fanRotateY = computeCarouselMirroredYaw(diff);
-  const fanScale = computeCarouselScale(absDiff);
+  // Exact collision-resolved resting fan positions — ensures 100% seamless closing alignment
+  const restingBooks = solveAllCarouselBooks(scrollProgress, 0, dimensions, totalBooks);
+  const restingBook = restingBooks[bookIndex] || restingBooks[0];
+
+  const fanX = restingBook.x;
+  const fanY = restingBook.y;
+  const fanZ = restingBook.z;
+  const fanRotateZ = restingBook.rotateZ;
+  const fanRotateY = restingBook.rotateY;
+  const fanScale = restingBook.scale;
 
   const isTarget = targetBookIndex === bookIndex;
   const clampedP = Math.max(0, Math.min(1, p));

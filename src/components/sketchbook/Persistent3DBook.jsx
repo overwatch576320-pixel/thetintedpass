@@ -83,6 +83,9 @@ export default function Persistent3DBook({
   // --- INTERACTIVE SPREAD TURNING (WHEN OPEN) ---
   const handleLeafPointerDown = (e) => {
     if (!isFullyOpen) return;
+    if (e.target.closest(".persistent-back-cover-close-zone") || e.target.closest(".persistent-back-cover")) {
+      return;
+    }
     leafDragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -221,20 +224,51 @@ export default function Persistent3DBook({
           aria-hidden="true"
         />
 
-        {/* 1. BACK HARDCOVER BOARD (Faces -Z) */}
+        {/* 1. BACK HARDCOVER BOARD (Faces -Z) with interactive closing trigger when open */}
         <div
-          className="persistent-book-face persistent-back-cover"
+          className={`persistent-book-face persistent-back-cover ${
+            isTargetBook && openProgress > 0.08 ? "is-back-cover-interactive" : ""
+          }`}
           style={{
-            width: `${W + 2}px`,
-            height: `${H + 2}px`,
-            left: "-1px",
-            top: "-1px",
+            width: `${W + (isTargetBook && openProgress > 0.08 ? 16 : 2)}px`,
+            height: `${H + (isTargetBook && openProgress > 0.08 ? 12 : 2)}px`,
+            left: `${isTargetBook && openProgress > 0.08 ? -2 : -1}px`,
+            top: `${isTargetBook && openProgress > 0.08 ? -6 : -1}px`,
             backgroundColor: coverColor,
             borderColor: edgeColor,
+            cursor: isFullyOpen ? "pointer" : "default",
           }}
-          aria-hidden="true"
+          onClick={(e) => {
+            if (isFullyOpen && onCloseRequest) {
+              e.stopPropagation();
+              onCloseRequest();
+            }
+          }}
+          role={isFullyOpen ? "button" : undefined}
+          tabIndex={isFullyOpen ? 0 : -1}
+          aria-label={isFullyOpen ? "Close sketchbook (Back cover)" : undefined}
         >
           <div className="persistent-back-monogram">TTP</div>
+
+          {/* Interactive Back Cover Touch Zone (Generous touch target for closing on mobile & desktop) */}
+          {isFullyOpen && (
+            <div
+              className="persistent-back-cover-close-zone"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onCloseRequest) onCloseRequest();
+              }}
+              title="Close sketchbook (Back cover)"
+              role="button"
+              tabIndex={0}
+              aria-label="Close sketchbook (Back cover)"
+            >
+              <span className="back-cover-tab-indicator">
+                <span aria-hidden="true">✕</span>
+                <span>BACK COVER</span>
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 2. SPINAL CASING (Faces -X, on Left Edge) */}
