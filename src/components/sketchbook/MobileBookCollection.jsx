@@ -286,24 +286,16 @@ export default function MobileBookCollection({
       onPointerCancel={handlePointerCancel}
       aria-label="Interactive 3D Book Collection. Tap any book to open, or swipe to browse."
     >
-      {/* Top Action Bar when Book is Opening or Open (Independent absolute overlay) */}
+      {/* Top Location Label when Book is Opening or Open */}
       {selectedBook && openProgress > 0.005 && (
         <div
           className="open-book-header-bar"
           style={{
             opacity: Math.min(1, openProgress * 1.8),
-            pointerEvents: openProgress > 0.2 ? "auto" : "none",
+            pointerEvents: "none",
           }}
           aria-hidden={openProgress < 0.05}
         >
-          <button
-            className="return-to-collection-btn"
-            onClick={handleCloseBook}
-            aria-label="Close book and return to collection"
-          >
-            <span className="return-arrow" aria-hidden="true">←</span>
-            <span>COLLECTION ({targetBookIndex + 1} OF {collection.length})</span>
-          </button>
           <span className="open-book-title-tag">{selectedBook.title}</span>
         </div>
       )}

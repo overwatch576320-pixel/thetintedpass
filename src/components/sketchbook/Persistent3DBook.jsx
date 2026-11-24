@@ -144,9 +144,13 @@ export default function Persistent3DBook({
     (dir, grabY = 0) => {
       if (!isFullyOpen || turningStateRef.current) return;
 
-      if (dir === 1 && currentSpread >= totalSpreads) return;
+      if (dir === 1 && currentSpread >= totalSpreads) {
+        // Reached end of book: closing from the back cover / last page!
+        if (onCloseRequest) onCloseRequest();
+        return;
+      }
       if (dir === -1 && currentSpread <= 1) {
-        // Turning backward past Spread 1 closes the book and returns to collection
+        // At start of book: closing from front cover / first page!
         if (onCloseRequest) onCloseRequest();
         return;
       }
@@ -189,9 +193,13 @@ export default function Persistent3DBook({
     const dir = clickX >= 0 ? 1 : -1;
 
     // Check boundary conditions
-    if (dir === 1 && currentSpread >= totalSpreads) return;
+    if (dir === 1 && currentSpread >= totalSpreads) {
+      // Tapping right page on last spread closes book naturally from the end
+      if (onCloseRequest) onCloseRequest();
+      return;
+    }
     if (dir === -1 && currentSpread <= 1) {
-      // Tapping left wing on Spread 1 triggers gentle close request
+      // Tapping left wing on Spread 1 closes book naturally from the front
       if (onCloseRequest) onCloseRequest();
       return;
     }
@@ -414,10 +422,10 @@ export default function Persistent3DBook({
             isTargetBook && openProgress > 0.08 ? "is-back-cover-interactive" : ""
           }`}
           style={{
-            width: `${W + (isTargetBook && openProgress > 0.08 ? 16 : 2)}px`,
-            height: `${H + (isTargetBook && openProgress > 0.08 ? 12 : 2)}px`,
-            left: `${isTargetBook && openProgress > 0.08 ? -2 : -1}px`,
-            top: `${isTargetBook && openProgress > 0.08 ? -6 : -1}px`,
+            width: `${W + 2}px`,
+            height: `${H + 2}px`,
+            left: "-1px",
+            top: "-1px",
             backgroundColor: coverColor,
             borderColor: edgeColor,
             cursor: isFullyOpen ? "pointer" : "default",

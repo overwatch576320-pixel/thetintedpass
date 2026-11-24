@@ -1,269 +1,431 @@
-import React, { useMemo } from "react";
+import React, { useRef, useEffect } from "react";
+import * as THREE from "three";
+import { PAGE_ASPECT } from "./geometry";
+import { BOOK_LIGHT } from "./lighting";
 
 /**
- * Subdivided 3D Flexible Paper Sheet
- * Implements authentic developable conical/cylindrical paper curl mathematics.
- *
- * Life cycle of a turn:
- * 1. Outer edge lifts first.
- * 2. Sheet curves into an authentic physical cylindrical/conical arc.
- * 3. High natural arch bridges forward (+Z) across the central spine.
- * 4. Front face turns away while reverse face becomes visible.
- * 5. Curvature relaxes as it approaches opposite stack.
- * 6. Lands flat and seamless on the opposite stack.
+ * Authentic 3D Flexible Paper Sheet
+ * Powered by Three.js with 64x40 subdivided mesh (2,560 vertices).
+ * Recreates the exact physical paper mechanics from niyamax.github.io/sketchbook:
+ * - Corner lift & diagonal folding (driven by grabY)
+ * - Traveling curved curl that rolls across the page
+ * - Dynamic central gutter swell & bridge
+ * - Dual-sided paper shader (revealing reverse side as it flips)
+ * - Dynamic moving highlights, specular sheen & cast shadow
  */
+
+const HINGE_DEPTH = 0.012;
+const HINGE_INSET = 0.006;
+const HINGE_WIDTH = 0.055;
+const CORNER = 0.040;
+const COLS = 64;
+const CORNER_ROWS = 12;
+const ROWS = 16 + CORNER_ROWS * 2;
+const ASPECT = PAGE_ASPECT;
+
+// Generates procedural paper stock texture
+function createPaperStockTexture() {
+  const size = 256;
+  const pixels = new Uint8Array(size * size * 4);
+  const random = (x, y) => {
+    let seed = Math.imul(x + 17, 374761393) ^ Math.imul(y + 53, 668265263);
+    seed = Math.imul(seed ^ (seed >>> 13), 1274126177);
+    return ((seed ^ (seed >>> 16)) >>> 0) / 4294967295;
+  };
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const fibre = random(Math.floor(x / 3), y);
+      const grain = random(x, y) * 0.7 + fibre * 0.3;
+      const offset = (y * size + x) * 4;
+      pixels[offset] = pixels[offset + 1] = pixels[offset + 2] = Math.round(
+        255 * (0.24 + grain * 0.52)
+      );
+      pixels[offset + 3] = 255;
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, size, size);
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, ASPECT);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Renders an editorial sketchbook folio onto a 2D canvas texture
+function createFolioCanvasTexture(pageData, width, height, paperColor, isRight) {
+  const canvas = document.createElement("canvas");
+  const scale = 2; // Retina sharpness
+  canvas.width = Math.round(width * scale);
+  canvas.height = Math.round(height * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  // 1. Warm paper base
+  ctx.fillStyle = paperColor || "#fbf8f0";
+  ctx.fillRect(0, 0, width, height);
+
+  // 2. Subtle artist dot-grid
+  ctx.fillStyle = "rgba(100, 115, 125, 0.13)";
+  const dotSpacing = 18;
+  const dotRadius = 0.75;
+  for (let x = 20; x < width - 20; x += dotSpacing) {
+    for (let y = 24; y < height - 24; y += dotSpacing) {
+      ctx.beginPath();
+      ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Central spine binding gradient
+  const gutterGrad = ctx.createLinearGradient(
+    isRight ? 0 : width - 24,
+    0,
+    isRight ? 24 : width,
+    0
+  );
+  if (isRight) {
+    gutterGrad.addColorStop(0, "rgba(0, 0, 0, 0.16)");
+    gutterGrad.addColorStop(0.35, "rgba(0, 0, 0, 0.04)");
+    gutterGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  } else {
+    gutterGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+    gutterGrad.addColorStop(0.65, "rgba(0, 0, 0, 0.04)");
+    gutterGrad.addColorStop(1, "rgba(0, 0, 0, 0.16)");
+  }
+  ctx.fillStyle = gutterGrad;
+  ctx.fillRect(isRight ? 0 : width - 24, 0, 24, height);
+
+  // 4. Folio Image (if present)
+  if (pageData?.image) {
+    const img = new Image();
+    img.src = pageData.image;
+    if (img.complete && img.naturalWidth) {
+      const fit = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+      const w = img.naturalWidth * fit;
+      const h = img.naturalHeight * fit;
+      ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
+    }
+  }
+
+  // 5. Folio Number typography
+  const pageNum = pageData?.pageNumber || pageData?.num;
+  if (pageNum) {
+    ctx.font = "600 9px monospace";
+    ctx.fillStyle = "rgba(40, 52, 60, 0.65)";
+    ctx.textBaseline = "alphabetic";
+    const numStr = String(pageNum).padStart(2, "0");
+    if (isRight) {
+      ctx.textAlign = "right";
+      ctx.fillText(numStr, width - 22, height - 20);
+    } else {
+      ctx.textAlign = "left";
+      ctx.fillText(numStr, 22, height - 20);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+// Custom Dual-Sided Physical Paper Material matching reference
+function createDualSidedPaperMaterial(frontTex, backTex, stockTex) {
+  const back = { value: backTex };
+  const faceInk = { value: 1.0 };
+  const bindingShade = { value: 0.035 };
+  const paperFill = { value: 0.45 };
+  const gutter = { value: 0.16 };
+
+  const material = new THREE.MeshPhysicalMaterial({
+    map: frontTex,
+    side: THREE.DoubleSide,
+    metalness: 0,
+    roughness: 0.82,
+    specularIntensity: 0.85,
+    clearcoat: 0.12,
+    clearcoatRoughness: 0.28,
+  });
+
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.backMap = back;
+    shader.uniforms.faceInkAmount = faceInk;
+    shader.uniforms.bindingShade = bindingShade;
+    shader.uniforms.paperFill = paperFill;
+    shader.uniforms.gutterAmount = gutter;
+    shader.uniforms.stockMap = { value: stockTex };
+
+    shader.fragmentShader =
+      "uniform sampler2D backMap;\nuniform sampler2D stockMap;\nuniform float faceInkAmount;\nuniform float bindingShade;\nuniform float paperFill;\nuniform float gutterAmount;\n" +
+      shader.fragmentShader;
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <map_fragment>",
+      `
+      vec4 frontInk = mix(texture2D(backMap, vMapUv), texture2D(map, vMapUv), faceInkAmount);
+      vec4 backInk = texture2D(backMap, vec2(1.0 - vMapUv.x, vMapUv.y));
+      diffuseColor *= gl_FrontFacing ? frontInk : backInk;
+      float stockGrain = texture2D(stockMap, vMapUv * vec2(1.0, ${ASPECT})).r;
+      diffuseColor.rgb *= 1.0 + (stockGrain - 0.5) * 0.12;
+      float bindingProfile = exp(-vMapUv.x * 28.0);
+      diffuseColor.rgb *= 1.0 - bindingShade * bindingProfile;
+      `
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <opaque_fragment>",
+      `
+      outgoingLight = mix(outgoingLight, max(outgoingLight, diffuseColor.rgb), paperFill);
+      outgoingLight *= 1.0 - gutterAmount * bindingProfile;
+      #include <opaque_fragment>
+      `
+    );
+  };
+
+  return { material, back, faceInk, bindingShade, paperFill, gutter };
+}
+
 export default function CurvedPaperSheet({
-  progress = 0, // 0.0 (flat right or start of turn) -> 1.0 (flat left or end of turn)
-  direction = 1, // 1 = forward (turning right to left), -1 = backward (turning left to right)
-  grabY = 0, // -1 (bottom corner) to +1 (top corner) for natural corner-lift tilt
+  progress = 0, // 0.0 (start) -> 1.0 (end)
+  direction = 1, // 1 = forward (right to left), -1 = backward (left to right)
+  grabY = 0, // -1 to +1 (corner lift)
   frontPage = null,
   backPage = null,
   width = 160,
   height = 226,
   paperColor = "#fbfaf6",
-  baseZ = 9.5,
 }) {
-  const NUM_STRIPS = 18;
-  const W = width;
-  const H = height;
+  const canvasRef = useRef(null);
+  const sceneRef = useRef(null);
+
   const clampedP = Math.max(0, Math.min(1, progress));
 
-  // Compute 3D coordinates and rotations for all strips across the width
-  const strips = useMemo(() => {
-    if (clampedP <= 0.001 || clampedP >= 0.999) return [];
+  // Initialize Three.js WebGL scene once
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    // Map progress to physical spatial configuration (0 = flat right, 1 = flat left)
-    const effectiveP = direction === 1 ? clampedP : 1 - clampedP;
-    const result = [];
-    const deltaW = W / NUM_STRIPS;
-
-    // Corner grab tilt: lifts the grabbed corner slightly earlier
-    const bellP = Math.sin(Math.PI * effectiveP);
-    const cornerTilt = grabY * 0.075 * bellP;
-
-    // Conical curl equations matching physical paper behavior:
-    const angle = Math.PI * effectiveP;
-    const curl = 0.58 * Math.sin(Math.PI * effectiveP);
-    const k = -2 * curl;
-    const a = angle + curl;
-
-    const calcPoint = (u) => {
-      let x, z;
-      if (Math.abs(k) < 1e-4) {
-        x = u * Math.cos(angle);
-        z = u * Math.sin(angle);
-      } else {
-        x = (Math.sin(a + k * u) - Math.sin(a)) / k;
-        z = (Math.cos(a) - Math.cos(a + k * u)) / k;
-      }
-      return { x: x * W, z: z * W };
-    };
-
-    for (let i = 0; i < NUM_STRIPS; i++) {
-      const u0 = i / NUM_STRIPS;
-      const u1 = (i + 1) / NUM_STRIPS;
-      const uMid = (i + 0.5) / NUM_STRIPS;
-
-      const p0 = calcPoint(u0);
-      const p1 = calcPoint(u1);
-
-      const dx = p1.x - p0.x;
-      const dz = p1.z - p0.z;
-      const chordLen = Math.hypot(dx, dz);
-      // Tangent angle in degrees
-      const rotY = Math.atan2(dz, dx) * (180 / Math.PI);
-
-      // Local surface normal orientation for realistic lighting
-      const normalAngle = a + k * uMid;
-      const frontLight = Math.max(0.74, 0.88 + 0.12 * Math.cos(normalAngle));
-      const backLight = Math.max(0.74, 0.88 - 0.12 * Math.cos(normalAngle));
-
-      // Specular sheen along the cylindrical crest of the arch
-      const crestProximity = Math.max(0, 1 - Math.abs(rotY - 90) / 45);
-      const sheenIntensity = 0.24 * Math.sin(Math.PI * effectiveP) * crestProximity;
-
-      // Coordinates in book space
-      const finalX = p0.x;
-      const finalZ = p0.z + baseZ;
-      const finalRotY = -rotY;
-
-      // Vertical tilt for corner lift
-      const stripTiltY = (i / NUM_STRIPS) * cornerTilt * 12;
-
-      result.push({
-        idx: i,
-        u: u0,
-        x: finalX,
-        y: stripTiltY,
-        z: finalZ,
-        width: Math.max(deltaW, chordLen) + 0.45, // slight overlap to prevent subpixel seams
-        rotY: finalRotY,
-        frontLight,
-        backLight,
-        sheenIntensity,
-        leftOffsetFront: i * deltaW,
-        leftOffsetBack: (NUM_STRIPS - i) * deltaW,
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: "low-power",
       });
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 2));
+      renderer.setSize(width * 2, height);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    } catch (e) {
+      console.warn("CurvedPaperSheet WebGL fallback:", e);
+      return;
     }
 
-    return result;
-  }, [clampedP, direction, grabY, W, baseZ]);
+    const scene = new THREE.Scene();
 
-  if (clampedP <= 0.001 || clampedP >= 0.999 || strips.length === 0) {
+    // Directional light matching sketchbook reference
+    const light = new THREE.DirectionalLight(0xffffff, 3.6);
+    light.position.set(BOOK_LIGHT.x * 4, BOOK_LIGHT.y * 4, BOOK_LIGHT.z * 4);
+    scene.add(light);
+
+    // Perspective camera
+    const camera = new THREE.PerspectiveCamera(
+      (2 * Math.atan(ASPECT / (2 * 6.2)) * 180) / Math.PI,
+      2 / ASPECT,
+      1,
+      12
+    );
+    camera.position.set(0, 0, 6.2);
+    scene.add(camera);
+
+    // Textures
+    const stock = createPaperStockTexture();
+    const frontTex = createFolioCanvasTexture(frontPage, width, height, paperColor, true);
+    const backTex = createFolioCanvasTexture(backPage, width, height, paperColor, false);
+
+    // 64x40 Subdivided Plane Geometry
+    const geometry = new THREE.PlaneGeometry(1, ASPECT, COLS, ROWS);
+    const uv = geometry.attributes.uv;
+    const edge = CORNER_ROWS / ROWS;
+    const radius = CORNER / ASPECT;
+    const arc = (t) => radius * (1 - Math.cos((t * Math.PI) / 2));
+    for (let i = 0; i < uv.count; i++) {
+      const v = 1 - Math.floor(i / (COLS + 1)) / ROWS;
+      uv.setY(
+        i,
+        v <= edge
+          ? arc(v / edge)
+          : v >= 1 - edge
+          ? 1 - arc((1 - v) / edge)
+          : radius + ((v - edge) / (1 - 2 * edge)) * (1 - 2 * radius)
+      );
+    }
+    uv.needsUpdate = true;
+
+    // Dual-Sided Material
+    const { material, back } = createDualSidedPaperMaterial(frontTex, backTex, stock);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+
+    // Dynamic Receiver-Page Cast Shadow
+    const shadeMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        extent: { value: 0 },
+        strength: { value: 0 },
+        leftPage: { value: 1 },
+        rightPage: { value: 1 },
+      },
+      vertexShader: `
+        varying vec2 paperUV;
+        void main() {
+          paperUV = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 paperUV;
+        uniform float extent, strength;
+        void main() {
+          float x = paperUV.x * 2.0 - 1.0;
+          float e = abs(extent);
+          float penumbra = 1.0 - smoothstep(max(0.0, e - 0.12), e + 0.12, abs(x));
+          float ends = smoothstep(0.0, 0.04, paperUV.y) * (1.0 - smoothstep(0.96, 1.0, paperUV.y));
+          gl_FragColor = vec4(0.05, 0.08, 0.12, strength * penumbra * ends);
+        }
+      `,
+    });
+    const shadeGeometry = new THREE.PlaneGeometry(2, ASPECT, COLS * 2 + 1, 1);
+    const shadeMesh = new THREE.Mesh(shadeGeometry, shadeMaterial);
+    shadeMesh.position.z = -0.003;
+    scene.add(shadeMesh);
+
+    sceneRef.current = {
+      renderer,
+      scene,
+      camera,
+      geometry,
+      mesh,
+      material,
+      back,
+      frontTex,
+      backTex,
+      stock,
+      shadeMesh,
+      shadeMaterial,
+    };
+
+    return () => {
+      renderer.dispose();
+      geometry.dispose();
+      shadeGeometry.dispose();
+      material.dispose();
+      shadeMaterial.dispose();
+      frontTex.dispose();
+      backTex.dispose();
+      stock.dispose();
+      sceneRef.current = null;
+    };
+  }, [width, height, paperColor, frontPage, backPage]);
+
+  // Update physical paper curl geometry on every frame/progress change
+  useEffect(() => {
+    const s = sceneRef.current;
+    if (!s) return;
+
+    const { renderer, scene, camera, geometry, shadeMaterial } = s;
+
+    // Physical Progress Mapping:
+    // Direction 1 (Forward): 0 (flat right) -> 1 (flat left)
+    // Direction -1 (Backward): 0 (flat left) -> 1 (flat right)
+    const effectiveProgress = direction === 1 ? clampedP : 1 - clampedP;
+    const effectiveGrab = direction === 1 ? grabY : -grabY;
+
+    // Apply authentic developable conical paper curl formula across all 2,560 vertices
+    const points = geometry.attributes.position;
+    const uv = geometry.attributes.uv;
+
+    for (let i = 0; i < points.count; i++) {
+      const u = uv.getX(i);
+      const v = uv.getY(i);
+      const baseY = (v - 0.5) * ASPECT;
+
+      // Rounded paper corner geometry
+      const cornerY = Math.max(0, Math.abs(baseY) - (ASPECT / 2 - CORNER));
+      const inset = CORNER - Math.sqrt(Math.max(0, CORNER * CORNER - cornerY * cornerY));
+      const reach = u * (1 - inset);
+      const hinge = Math.exp(-reach / HINGE_WIDTH);
+      const y = baseY * (1 - (2 * HINGE_INSET * hinge) / ASPECT);
+
+      // Corner Grab Diagonal Folding:
+      // When grabbed near a corner (v != 0.5), progress p is modulated across the sheet,
+      // causing the corner to lift first and a continuous diagonal fold to roll across!
+      const p = THREE.MathUtils.clamp(
+        effectiveProgress + effectiveGrab * 0.085 * (v - 0.5) * 2 * Math.sin(Math.PI * effectiveProgress),
+        0,
+        1
+      );
+
+      // Conical paper curl equations
+      const angle = Math.PI * p;
+      const curl = 0.58 * Math.sin(Math.PI * p);
+      const k = -2 * curl;
+      const a = angle + curl;
+
+      const x = Math.abs(k) < 1e-5 ? reach * Math.cos(angle) : (Math.sin(a + k * reach) - Math.sin(a)) / k;
+      const z = Math.abs(k) < 1e-5 ? reach * Math.sin(angle) : (Math.cos(a) - Math.cos(a + k * reach)) / k;
+
+      // Elastic gutter rise bridging across the central binding
+      const gutterRise = 0.024 * (1 - Math.exp(-reach / 0.06)) * Math.exp(-reach / 0.22);
+
+      points.setXYZ(
+        i,
+        x,
+        y,
+        z - HINGE_DEPTH * hinge + gutterRise * Math.cos(Math.PI * p) ** 2
+      );
+    }
+
+    points.needsUpdate = true;
+    geometry.computeVertexNormals();
+
+    // Update dynamic cast shadow onto underlying page
+    shadeMaterial.uniforms.extent.value = (effectiveProgress - 0.5) * 1.8;
+    shadeMaterial.uniforms.strength.value = 0.42 * Math.sin(Math.PI * effectiveProgress);
+
+    renderer.render(scene, camera);
+  }, [clampedP, direction, grabY]);
+
+  if (clampedP <= 0.001 || clampedP >= 0.999) {
     return null;
   }
-
-  // Under-sheet dynamic ambient cast shadow onto underlying page stack
-  const effectiveP = direction === 1 ? clampedP : 1 - clampedP;
-  const shadowOpacity = 0.38 * Math.sin(Math.PI * effectiveP);
-  // Center of shadow moves smoothly across the gutter with the crest
-  const crestX = (0.5 - effectiveP) * W * 0.85;
 
   return (
     <div
       className="curved-paper-host"
       style={{
         position: "absolute",
-        left: 0,
+        left: `-${width}px`,
         top: 0,
-        width: `${W}px`,
-        height: `${H}px`,
+        width: `${width * 2}px`,
+        height: `${height}px`,
         pointerEvents: "none",
-        transformStyle: "preserve-3d",
-        zIndex: 50,
+        zIndex: 60,
       }}
       aria-hidden="true"
     >
-      {/* 1. Dynamic Contact Shadow on the Page Below */}
-      {shadowOpacity > 0.02 && (
-        <div
-          className="curved-paper-cast-shadow"
-          style={{
-            position: "absolute",
-            left: `${crestX - W * 0.5}px`,
-            top: "6px",
-            width: `${W}px`,
-            height: `${H - 12}px`,
-            transform: `translateZ(${baseZ - 1}px)`,
-            background: `radial-gradient(ellipse at center, rgba(10, 18, 26, ${shadowOpacity.toFixed(2)}) 0%, rgba(10, 18, 26, ${(shadowOpacity * 0.35).toFixed(2)}) 55%, transparent 75%)`,
-            filter: "blur(8px)",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-
-      {/* 2. Subdivided 3D Geometry Strips */}
-      {strips.map((strip) => (
-        <div
-          key={strip.idx}
-          className="curved-paper-strip"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: `${strip.width.toFixed(2)}px`,
-            height: `${H}px`,
-            transformOrigin: "0% 50% 0px",
-            transform: `translate3d(${strip.x.toFixed(2)}px, ${strip.y.toFixed(2)}px, ${strip.z.toFixed(2)}px) rotateY(${strip.rotY.toFixed(2)}deg)`,
-            transformStyle: "preserve-3d",
-            backfaceVisibility: "hidden",
-          }}
-        >
-          {/* Front Face: Slice of Turning Front Page */}
-          <div
-            className="curved-strip-face front-strip"
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundColor: paperColor,
-              overflow: "hidden",
-              backfaceVisibility: "hidden",
-              filter: `brightness(${strip.frontLight.toFixed(3)})`,
-              boxShadow: strip.u < 0.1 ? "inset 2px 0 4px rgba(0,0,0,0.15)" : "none",
-            }}
-          >
-            <div
-              className="curved-strip-slice-content"
-              style={{
-                position: "absolute",
-                left: `${-strip.leftOffsetFront.toFixed(2)}px`,
-                top: 0,
-                width: `${W}px`,
-                height: `${H}px`,
-                backgroundColor: paperColor,
-              }}
-            >
-              {frontPage?.image ? (
-                <img
-                  src={frontPage.image}
-                  alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                <div className="persistent-folio-blank">
-                  <span className="persistent-folio-num right-num">
-                    {String(frontPage?.pageNumber || frontPage?.num || 2).padStart(2, "0")}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Specular sheen along the crest */}
-            {strip.sheenIntensity > 0.02 && (
-              <div
-                className="curved-strip-sheen"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: `linear-gradient(to right, transparent, rgba(255,255,255,${strip.sheenIntensity.toFixed(2)}), transparent)`,
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </div>
-
-          {/* Back Face: Slice of Turning Reverse Page */}
-          <div
-            className="curved-strip-face back-strip"
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundColor: paperColor,
-              overflow: "hidden",
-              transform: "rotateY(180deg)",
-              backfaceVisibility: "hidden",
-              filter: `brightness(${strip.backLight.toFixed(3)})`,
-              boxShadow: (1 - strip.u) < 0.1 ? "inset -2px 0 4px rgba(0,0,0,0.15)" : "none",
-            }}
-          >
-            <div
-              className="curved-strip-slice-content"
-              style={{
-                position: "absolute",
-                left: `${-strip.leftOffsetBack.toFixed(2)}px`,
-                top: 0,
-                width: `${W}px`,
-                height: `${H}px`,
-                backgroundColor: paperColor,
-              }}
-            >
-              {backPage?.image ? (
-                <img
-                  src={backPage.image}
-                  alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              ) : (
-                <div className="persistent-folio-blank">
-                  <span className="persistent-folio-num left-num">
-                    {String(backPage?.pageNumber || backPage?.num || 3).padStart(2, "0")}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+        }}
+      />
     </div>
   );
 }
