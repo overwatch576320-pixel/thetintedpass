@@ -11,6 +11,9 @@ import ExploreLadakh from "./pages/ExploreLadakh";
 import ArtExperience from "./pages/ArtExperience";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import Stage1Prototype from "./components/sketchbook/v2/Stage1Prototype";
+import Stage2Carousel from "./components/sketchbook/v2/Stage2Carousel";
+import Stage3Prototype from "./components/sketchbook/v2/Stage3Prototype";
 
 export default function App() {
   const location = useLocation();
@@ -42,6 +45,11 @@ export default function App() {
 
           {/* Secure Admin CMS Dashboard */}
           <Route path="/admin" element={<Admin />} />
+
+          {/* Clean Architecture Staged Prototypes */}
+          <Route path="/stage1" element={<Stage1Prototype />} />
+          <Route path="/stage2" element={<Stage2Carousel />} />
+          <Route path="/stage3" element={<Stage3Prototype />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

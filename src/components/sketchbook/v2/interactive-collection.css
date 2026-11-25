@@ -1,0 +1,132 @@
+/**
+ * THE TINTED PASS — Interactive 3D Book Collection CSS (v2 Engine)
+ * Scoped styles for the Swiper Coverflow carousel integrating PhysicalBook instances.
+ */
+
+.tinted-book-collection-root {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  overflow: visible;
+  padding: 10px 0 20px 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tinted-book-swiper {
+  width: 100%;
+  padding-top: 15px;
+  padding-bottom: 25px;
+  overflow: visible !important;
+}
+
+.tinted-book-swiper .swiper-wrapper {
+  align-items: center;
+  overflow: visible;
+}
+
+.tinted-book-slide {
+  width: 280px;
+  height: 350px;
+  position: relative;
+  transition-property: transform, filter, opacity;
+  transition-timing-function: cubic-bezier(0.2, 0, 0.25, 1);
+  will-change: transform, filter, opacity;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .tinted-book-collection-root {
+    padding: 0;
+  }
+  .tinted-book-swiper {
+    padding-top: 6px;
+    padding-bottom: 10px;
+  }
+  .tinted-book-active-tag {
+    margin-bottom: 6px;
+  }
+  .tinted-book-slide {
+    width: 200px;
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tinted-book-collection-root {
+    padding: 0;
+  }
+  .tinted-book-swiper {
+    padding-top: 2px;
+    padding-bottom: 6px;
+  }
+  .tinted-book-active-tag {
+    margin-bottom: 4px;
+  }
+  .tinted-book-slide {
+    width: 168px;
+    height: 210px;
+  }
+}
+
+/* Slide inner wrap hosting the PhysicalBook */
+.tinted-book-slide-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-origin: center center;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0.25, 1), filter 0.2s ease, opacity 0.2s ease;
+  will-change: transform, filter, opacity;
+}
+
+/* Inactive slide overlay to prevent pointer capture while browsing side books */
+.tinted-book-slide-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  cursor: pointer;
+  background: transparent;
+}
+
+/* Subtle cohort tag floating above active book */
+.tinted-book-active-tag {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.tinted-book-active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(18, 24, 27, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.tinted-book-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64b5f6;
+  box-shadow: 0 0 8px rgba(100, 181, 246, 0.6);
+}

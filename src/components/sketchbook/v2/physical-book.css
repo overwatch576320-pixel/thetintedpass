@@ -1,0 +1,162 @@
+/**
+ * THE TINTED PASS — Physical Sketchbook Engine v2
+ * Scoped styles for the standalone 3D physical hardcover sketchbook.
+ * Matches reference: https://niyamax.github.io/sketchbook/
+ */
+
+.physical-book-reader {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  box-sizing: border-box;
+}
+
+.physical-book-reader.is-preparing {
+  opacity: 0.85;
+}
+
+.physical-book-reader.is-presented {
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+
+.physical-book-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  --book-canvas-scale-x: 2.8;
+  --book-canvas-scale-y: 1.6;
+  cursor: grab;
+  touch-action: pan-y;
+  outline: none;
+}
+
+.physical-book-container:active {
+  cursor: grabbing;
+}
+
+/* Ground shadow projected beneath book */
+.physical-book-ground {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  transition: box-shadow 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+/* Spine binding fallback / chassis */
+.physical-book-binding {
+  background: var(--sketchbook-cover, #1c2328);
+  border-radius: 7px 0 0 7px;
+  position: absolute;
+  top: 1px;
+  right: -3px;
+  bottom: -7px;
+  left: -8px;
+  box-shadow: -1px 1px 2px rgba(0, 0, 0, 0.2), 2px 20px 22px -13px rgba(0, 0, 0, 0.25);
+  display: block;
+}
+
+.has-paper-renderer .physical-book-binding {
+  display: none; /* Managed by WebGL Three.js chassis */
+}
+
+/* Layered paper-stack edges */
+.physical-book-paper-edges {
+  background: repeating-linear-gradient(
+    0deg,
+    #dcd6c9 0px,
+    #dcd6c9 1px,
+    #fbf7eb 1px,
+    #fbf7eb 2px
+  );
+  border-right: 1px solid #e2dcce;
+  border-radius: 1px 2px 3px 1px;
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: -5px;
+  left: -2px;
+  box-shadow: -3px 0 #f2eddf, -5px 1px #d6c6ab;
+  display: block;
+}
+
+.has-paper-renderer .physical-book-paper-edges {
+  display: none; /* Rendered physically in Three.js stack pile */
+}
+
+/* Under source elements used for WebGL canvas texture extraction */
+.physical-book-under-source {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  z-index: -1;
+}
+
+/* Resting page behind WebGL canvas when resting */
+.physical-book-resting-page {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Three.js Paper Canvas Host */
+.physical-book-canvas {
+  position: absolute;
+  width: calc(var(--book-canvas-scale-x, 2.8) * 100%);
+  height: calc(var(--book-canvas-scale-y, 1.6) * 100%);
+  left: calc((1 - var(--book-canvas-scale-x, 2.8)) * 50%);
+  top: calc((1 - var(--book-canvas-scale-y, 1.6)) * 50%);
+  pointer-events: none;
+  z-index: 1;
+  display: block;
+}
+
+.physical-book-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Touch and click active edge zones */
+.physical-book-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 25%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 3;
+  touch-action: pan-y !important;
+  outline: none;
+}
+
+.physical-book-edge-left {
+  left: 0;
+  cursor: w-resize;
+}
+
+.physical-book-edge-right {
+  right: 0;
+  cursor: e-resize;
+}
+
+.physical-book-edge:disabled {
+  pointer-events: none;
+  cursor: default;
+}
