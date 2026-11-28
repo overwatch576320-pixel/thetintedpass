@@ -61,6 +61,31 @@
   user-select: none;
 }
 
+/* Reading Mode: continuous depth-of-field blur on flanking slides */
+.coverflow-carousel-container.is-reading .swiper-slide:not(.swiper-slide-active) {
+  filter: blur(var(--reading-blur, 12px)) !important;
+  opacity: var(--reading-opacity, 0.35) !important;
+  transition: filter 0.1s ease-out, opacity 0.1s ease-out;
+  pointer-events: none;
+}
+
+.coverflow-carousel-container.is-reading .swiper-slide.swiper-slide-active {
+  overflow: visible !important;
+  z-index: 100 !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.coverflow-carousel-container.is-reading .swiper {
+  overflow: visible !important;
+}
+
+.swiper-slide.is-reading-active .slide-card-image {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* 3D Slide Shadows from Reference */
 .swiper-3d .swiper-slide-shadow-left,
 .swiper-container-3d .swiper-slide-shadow-left {
