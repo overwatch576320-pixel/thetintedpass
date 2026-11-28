@@ -117,6 +117,18 @@ export function PhysicalBookSpread({
     };
   }, [dimensions.pageWidth, dimensions.pageHeight]);
 
+  // Function to smoothly scale the physical book between closed card dimensions and open spread
+  const updateScale = useCallback(
+    (p) => {
+      if (!containerRef.current) return;
+      const spreadScale = dimensions.spreadScale || 1.0;
+      // p is 0 when fully closed, 1 when fully open
+      const s = 1.0 + (spreadScale - 1.0) * p;
+      containerRef.current.style.transform = `translate(-50%, -50%) scale(${s.toFixed(4)})`;
+    },
+    [dimensions.spreadScale]
+  );
+
   // Smooth settling animation loop using single requestAnimationFrame
   const settleProgress = useCallback(
     (startProgress, targetProgress, velocity, onDone) => {
@@ -142,16 +154,21 @@ export function PhysicalBookSpread({
         if (g.mode === "opening" || spreadRef.current === 0) {
           engineRef.current?.showTurn(0, current, 0);
           onProgressChange(current);
+          updateScale(current);
         } else if (g.mode === "turning_forward") {
           engineRef.current?.showTurn(spreadRef.current, current, 0);
+          updateScale(1);
         } else if (g.mode === "turning_backward") {
           engineRef.current?.showTurn(spreadRef.current - 1, 1 - current, 0);
+          updateScale(1);
         } else if (g.mode === "closing_front") {
           engineRef.current?.showTurn(0, current, 0);
           onProgressChange(current);
+          updateScale(current);
         } else if (g.mode === "closing_back") {
           engineRef.current?.showTurn(lastTurn, current, 0);
           onProgressChange(1 - current);
+          updateScale(1 - current);
         }
 
         if (t < 1) {
@@ -164,7 +181,7 @@ export function PhysicalBookSpread({
 
       animFrameRef.current = requestAnimationFrame(step);
     },
-    [onProgressChange, lastTurn]
+    [onProgressChange, lastTurn, updateScale]
   );
 
   // Automatically begin opening from closed front cover on mount
@@ -174,6 +191,7 @@ export function PhysicalBookSpread({
     spreadRef.current = 0;
     setCurrentSpread(0);
     gestureRef.current.mode = "opening";
+    updateScale(0);
 
     // Smoothly open front cover around spine hinge
     settleProgress(0, 1, 0.8, () => {
@@ -181,6 +199,7 @@ export function PhysicalBookSpread({
       setCurrentSpread(1);
       gestureRef.current.mode = null;
       engineRef.current?.showRest(1);
+      updateScale(1);
       onProgressChange(1);
       onPageChange(1);
     });
@@ -254,16 +273,19 @@ export function PhysicalBookSpread({
       g.currentProgress = p;
       engineRef.current.showTurn(0, p, grab);
       onProgressChange(p);
+      updateScale(p);
     } else if (g.mode === "closing_front") {
       const p = Math.max(0, Math.min(1, 1 - dx / dragDistance));
       g.currentProgress = p;
       engineRef.current.showTurn(0, p, grab);
       onProgressChange(p);
+      updateScale(p);
     } else if (g.mode === "closing_back") {
       const p = Math.max(0, Math.min(1, -dx / dragDistance));
       g.currentProgress = p;
       engineRef.current.showTurn(lastTurn, p, grab);
       onProgressChange(1 - p);
+      updateScale(1 - p);
     } else if (g.mode === "turning_forward") {
       const p = Math.max(0, Math.min(1, -dx / dragDistance));
       g.currentProgress = p;
@@ -298,11 +320,13 @@ export function PhysicalBookSpread({
           spreadRef.current = 1;
           setCurrentSpread(1);
           engineRef.current?.showRest(1);
+          updateScale(1);
           onProgressChange(1);
           onPageChange(1);
         } else {
           spreadRef.current = 0;
           setCurrentSpread(0);
+          updateScale(0);
           onProgressChange(0);
           onClose("front");
         }
@@ -313,12 +337,14 @@ export function PhysicalBookSpread({
         if (willClose) {
           spreadRef.current = 0;
           setCurrentSpread(0);
+          updateScale(0);
           onProgressChange(0);
           onClose("front");
         } else {
           spreadRef.current = 1;
           setCurrentSpread(1);
           engineRef.current?.showRest(1);
+          updateScale(1);
           onProgressChange(1);
         }
       });
@@ -328,10 +354,12 @@ export function PhysicalBookSpread({
         if (willClose) {
           spreadRef.current = lastSpread;
           setCurrentSpread(lastSpread);
+          updateScale(0);
           onProgressChange(0);
           onClose("back");
         } else {
           engineRef.current?.showRest(spreadRef.current);
+          updateScale(1);
           onProgressChange(1);
         }
       });
@@ -343,9 +371,11 @@ export function PhysicalBookSpread({
           spreadRef.current = next;
           setCurrentSpread(next);
           engineRef.current?.showRest(next);
+          updateScale(1);
           onPageChange(next);
         } else {
           engineRef.current?.showRest(spreadRef.current);
+          updateScale(1);
         }
       });
     } else if (mode === "turning_backward") {
@@ -356,9 +386,11 @@ export function PhysicalBookSpread({
           spreadRef.current = prev;
           setCurrentSpread(prev);
           engineRef.current?.showRest(prev);
+          updateScale(1);
           onPageChange(prev);
         } else {
           engineRef.current?.showRest(spreadRef.current);
+          updateScale(1);
         }
       });
     }
@@ -431,8 +463,9 @@ export function PhysicalBookSpread({
       ref={containerRef}
       className="physical-book-spread-root"
       style={{
-        width: `${dimensions.openSpreadWidth}px`,
+        width: `${dimensions.pageWidth * 2}px`,
         height: `${dimensions.pageHeight}px`,
+        transform: "translate(-50%, -50%) scale(1)",
         "--sketchbook-cover": book.coverColor || "#1b3358",
         "--sketchbook-cover-edge": book.edgeColor || "#0f1e33",
         "--sketchbook-paper": book.paperColor || "#fbf8f0",

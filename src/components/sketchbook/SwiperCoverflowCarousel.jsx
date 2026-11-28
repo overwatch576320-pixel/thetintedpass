@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Swiper from "swiper/bundle";
 import "swiper/css/bundle";
-import { calculateBookDimensions } from "./responsive-dimensions";
+import { getResponsiveBookDimensions, calculateBookDimensions } from "./responsive-dimensions";
 import PhysicalBookSpread from "./PhysicalBookSpread";
 import "./swiper-coverflow.css";
 
@@ -172,32 +172,23 @@ export function SwiperCoverflowCarousel({ slides = DEFAULT_BOOKS }) {
   const [isReading, setIsReading] = useState(false);
   const [readingBook, setReadingBook] = useState(null);
 
-  // Responsive dimensions calculated from available space
+  // Responsive dimensions calculated from window width (card = closed physical book)
   const [dimensions, setDimensions] = useState(() =>
-    calculateBookDimensions(
-      typeof window !== "undefined" ? window.innerWidth : 1280,
-      typeof window !== "undefined" ? window.innerHeight * 0.5 : 400
-    )
+    getResponsiveBookDimensions(typeof window !== "undefined" ? window.innerWidth : 1280)
   );
 
-  // Calculate open book dimensions first and sync scale
+  // Sync dimensions on window resize
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
     const updateDims = () => {
-      const rect = container.getBoundingClientRect();
-      const dims = calculateBookDimensions(rect.width, rect.height);
+      const w = typeof window !== "undefined" ? window.innerWidth : 1280;
+      const dims = getResponsiveBookDimensions(w);
       setDimensions(dims);
     };
 
     updateDims();
-    const observer = new ResizeObserver(updateDims);
-    observer.observe(container);
     window.addEventListener("resize", updateDims);
 
     return () => {
-      observer.disconnect();
       window.removeEventListener("resize", updateDims);
     };
   }, []);
@@ -225,12 +216,34 @@ export function SwiperCoverflowCarousel({ slides = DEFAULT_BOOKS }) {
       preventClicks: false,
       preventClicksPropagation: false,
 
+      // Slightly reduced spacing between cards via negative stretch
       coverflowEffect: {
         rotate: 50,
-        stretch: 0,
+        stretch: -15,
         depth: 100,
         modifier: 1,
         slideShadows: true,
+      },
+
+      breakpoints: {
+        320: {
+          coverflowEffect: {
+            rotate: 50,
+            stretch: -10, // slightly tighter spacing on mobile
+            depth: 100,
+            modifier: 1,
+            slideShadows: true,
+          },
+        },
+        768: {
+          coverflowEffect: {
+            rotate: 50,
+            stretch: -15,
+            depth: 100,
+            modifier: 1,
+            slideShadows: true,
+          },
+        },
       },
 
       on: {

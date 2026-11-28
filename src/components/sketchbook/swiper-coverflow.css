@@ -141,18 +141,18 @@
 
 @media (max-width: 480px) {
   .coverflow-carousel-container {
-    max-height: 310px;
+    max-height: 320px;
   }
   .swiper {
     padding-top: 6px;
     padding-bottom: 10px;
-    max-height: 310px;
+    max-height: 320px;
   }
   .swiper-slide {
-    width: 164px !important;
-    max-width: 164px !important;
-    height: 232px !important;
-    max-height: 232px !important;
+    width: var(--slide-width, 175px) !important;
+    max-width: var(--slide-width, 175px) !important;
+    height: var(--slide-height, 248px) !important;
+    max-height: var(--slide-height, 248px) !important;
     border-radius: 8px;
   }
   .swiper-3d .swiper-slide-shadow-left,
