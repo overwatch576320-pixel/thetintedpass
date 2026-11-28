@@ -1,27 +1,26 @@
-import { InteractiveBookCollection } from "./v2/InteractiveBookCollection";
-import { DEFAULT_BOOK_COLLECTION } from "../../data/defaultBookCollection";
+import { SwiperCoverflowCarousel } from "./SwiperCoverflowCarousel";
 import "./sketchbook.css";
 
 /**
- * THE TINTED PASS — Homepage 3D Interactive Book Collection
- * Rebuilt using a clean dual-engine architecture:
- * 1. Swiper Coverflow Engine for carousel motion, perspective, 75% side-book scale,
- *    mirrored inward Y-axis rotation, and progressive depth-of-field blur.
- * 2. Physical Book Engine for authentic hardcover opening/closing around spine hinge,
- *    3D subdivided paper curl deformation, corner dragging, and closing from back cover.
+ * THE TINTED PASS — Homepage Carousel Stage
+ * Temporarily isolated to pure Swiper Coverflow with simple image cards.
+ * Reproduces the user-supplied Swiper Coverflow reference directly:
+ * - Center card facing viewer
+ * - Perspective rotation on sides
+ * - 3D depth and shadows
+ * - Fluid dragging and momentum
+ * - Zero 3D book geometry or opening/closing animations
  */
 export default function Sketchbook({
   bookSettings = {},
   pages = [],
 }) {
-  const books = bookSettings.bookCollection || DEFAULT_BOOK_COLLECTION;
-
   return (
     <div
       className="tinted-sketchbook-root"
-      aria-label="Interactive 3D Artist Book Collection"
+      aria-label="Interactive 3D Carousel Stage"
     >
-      <InteractiveBookCollection books={books} />
+      <SwiperCoverflowCarousel />
     </div>
   );
 }
