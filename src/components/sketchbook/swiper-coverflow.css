@@ -34,8 +34,11 @@
 }
 
 .swiper-slide {
-  width: 350px;
-  height: 440px;
+  width: 280px !important;
+  max-width: 280px !important;
+  height: 396px !important;
+  max-height: 396px !important;
+  flex-shrink: 0 !important;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45);
@@ -75,14 +78,17 @@
   z-index: 2;
 }
 
-/* Responsive height adjustments so cards maintain 4:5 proportions and fit the viewport stage */
+/* Responsive card dimensions matching actual closed sketchbooks (ISO A4 1:1.414) */
 @media (max-width: 1200px) {
   .swiper {
     padding-top: 20px;
     padding-bottom: 20px;
   }
   .swiper-slide {
-    height: 400px;
+    width: 250px !important;
+    max-width: 250px !important;
+    height: 354px !important;
+    max-height: 354px !important;
   }
 }
 
@@ -96,8 +102,10 @@
     max-height: 340px;
   }
   .swiper-slide {
-    height: 250px !important;
-    max-height: 250px;
+    width: 210px !important;
+    max-width: 210px !important;
+    height: 297px !important;
+    max-height: 297px !important;
     border-radius: 8px;
   }
   .swiper-3d .swiper-slide-shadow-left,
@@ -116,8 +124,10 @@
     max-height: 310px;
   }
   .swiper-slide {
-    height: 230px !important;
-    max-height: 230px;
+    width: 164px !important;
+    max-width: 164px !important;
+    height: 232px !important;
+    max-height: 232px !important;
     border-radius: 8px;
   }
   .swiper-3d .swiper-slide-shadow-left,
